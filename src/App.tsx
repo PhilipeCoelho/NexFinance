@@ -5,6 +5,7 @@ import Transactions from '@/pages/Transactions';
 import Accounts from '@/pages/Accounts';
 import Cards from '@/pages/Cards';
 import Settings from '@/pages/Settings';
+import Migration from '@/pages/Migration';
 import MonthSelector from '@/components/MonthSelector';
 import { useFinanceStore } from '@/hooks/use-store';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -32,6 +33,7 @@ const App: React.FC = () => {
                             <Route path="/accounts" element={<Accounts />} />
                             <Route path="/cards" element={<Cards />} />
                             <Route path="/settings" element={<Settings />} />
+                            <Route path="/migration" element={<Migration />} />
                         </Routes>
                     </div>
                 </main>
