@@ -8,22 +8,61 @@ const MigrationTool: React.FC = () => {
     const [message, setMessage] = useState('');
     const { personalData, businessData } = useFinanceStore();
 
-    const handleMigration = async () => {
-        setStatus('migrating');
-        setMessage('Iniciando migração dos dados locais para o Supabase...');
+    const exportData = () => {
+        const data = {
+            personal: personalData,
+            business: businessData,
+            version: '1.1.0-pro',
+            timestamp: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nexfinance_backup_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        setMessage('Ficheiro de backup exportado com sucesso!');
+    };
 
+    const importData = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = JSON.parse(e.target?.result as string);
+
+                // Opção 1: Salvar localmente (Zustand)
+                if (data.personal && data.business) {
+                    // Aqui poderíamos chamar um setStore total, mas vamos apenas migrar para o Supabase diretamente
+                    setMessage('Dados carregados do ficheiro. Iniciando sincronização com Supabase...');
+
+                    // Reutilizar a lógica de migração com os dados do ficheiro
+                    await performMigration(data.personal, data.business);
+                }
+            } catch (err) {
+                setMessage('Erro ao ler o ficheiro de backup.');
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const performMigration = async (pData: any, bData: any) => {
+        setStatus('migrating');
         try {
             // 1. Migrar Contas
             const allAccounts = [
-                ...personalData.accounts.map(a => ({ ...a, context: 'personal' })),
-                ...businessData.accounts.map(a => ({ ...a, context: 'business' }))
+                ...pData.accounts.map((a: any) => ({ ...a, context: 'personal' })),
+                ...bData.accounts.map((a: any) => ({ ...a, context: 'business' }))
             ];
 
             if (allAccounts.length > 0) {
-                setMessage(`Migrando ${allAccounts.length} contas...`);
+                setMessage(`Migrando ${allAccounts.length} contas para o Supabase...`);
                 const { error: accError } = await supabase
                     .from('accounts')
-                    .upsert(allAccounts.map(a => ({
+                    .upsert(allAccounts.map((a: any) => ({
                         id: a.id,
                         name: a.name,
                         institution: a.institution,
@@ -36,15 +75,15 @@ const MigrationTool: React.FC = () => {
 
             // 2. Migrar Transações
             const allTransactions = [
-                ...personalData.transactions.map(t => ({ ...t, context: 'personal' })),
-                ...businessData.transactions.map(t => ({ ...t, context: 'business' }))
+                ...pData.transactions.map((t: any) => ({ ...t, context: 'personal' })),
+                ...bData.transactions.map((t: any) => ({ ...t, context: 'business' }))
             ];
 
             if (allTransactions.length > 0) {
                 setMessage(`Migrando ${allTransactions.length} transações...`);
                 const { error: transError } = await supabase
                     .from('transactions')
-                    .upsert(allTransactions.map(t => ({
+                    .upsert(allTransactions.map((t: any) => ({
                         id: t.id,
                         type: t.type,
                         value: t.value,
@@ -62,13 +101,15 @@ const MigrationTool: React.FC = () => {
             }
 
             setStatus('success');
-            setMessage('Migração concluída com sucesso! Os seus dados agora estão no Supabase.');
+            setMessage('Dados migrados com sucesso para o Supabase!');
         } catch (err: any) {
             console.error(err);
             setStatus('error');
             setMessage(`Erro na migração: ${err.message || 'Erro desconhecido'}`);
         }
     };
+
+    const handleMigration = () => performMigration(personalData, businessData);
 
     return (
         <div className="migration-tool card" style={{ maxWidth: '600px', margin: '40px auto', padding: '32px' }}>
@@ -96,14 +137,39 @@ const MigrationTool: React.FC = () => {
                 <span style={{ fontSize: '13px', fontWeight: 500 }}>{message || 'Pronto para iniciar.'}</span>
             </div>
 
-            <button
-                className="btn btn-primary"
-                style={{ width: '100%', height: '48px' }}
-                onClick={handleMigration}
-                disabled={status === 'migrating' || status === 'success'}
-            >
-                {status === 'migrating' ? 'A migrar...' : 'Iniciar Migração Agora'}
-            </button>
+            <div className="migration-actions" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', height: '48px' }}
+                    onClick={handleMigration}
+                    disabled={status === 'migrating' || status === 'success'}
+                >
+                    {status === 'migrating' ? 'A migrar...' : 'Migração Direta (Recomentado)'}
+                </button>
+
+                <div style={{ borderTop: '1px solid var(--border-color)', margin: '12px 0', paddingTop: '24px' }}>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'center' }}>
+                        Se a migração direta falhar, use o método manual abaixo:
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <button
+                            className="btn btn-secondary"
+                            style={{ width: '100%', height: '42px', fontSize: '13px' }}
+                            onClick={exportData}
+                        >
+                            1. Exportar JSON
+                        </button>
+                        <label className="btn btn-secondary" style={{
+                            width: '100%', height: '42px', fontSize: '13px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            cursor: 'pointer', margin: 0
+                        }}>
+                            2. Importar JSON
+                            <input type="file" accept=".json" onChange={importData} style={{ display: 'none' }} />
+                        </label>
+                    </div>
+                </div>
+            </div>
 
             <style dangerouslySetInnerHTML={{
                 __html: `
