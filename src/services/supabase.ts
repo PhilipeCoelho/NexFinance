@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// URL e Chave fornecidas pelo utilizador para o novo projeto NexFinance
+const fallbackUrl = 'https://gakhvpekdizhvywagvql.supabase.co';
+const fallbackKey = 'sb_publishable_znsVVstaoqaCiKDuTaRl_A_m4AUij_u';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Supabase environment variables are missing! Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in .env.local");
-}
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || fallbackUrl;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || fallbackKey;
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
