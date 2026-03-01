@@ -1,7 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Usando as chaves capturadas da imagem do usuário
-const supabaseUrl = 'https://znsVVstaoqaCiKDuTaRl.supabase.co';
-const supabaseAnonKey = 'sb_publishable_znsVVstaoqaCiKDuTaRl_A_m4AUi...'; // Note: I will use the actual key from the image if I can read it fully, otherwise I'll use placeholders.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("Supabase environment variables are missing! Ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set in .env.local");
+}
+
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');

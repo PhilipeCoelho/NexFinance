@@ -76,7 +76,7 @@ const MigrationTool: React.FC = () => {
                 <div style={{
                     width: '64px', height: '64px', background: 'rgba(47, 129, 247, 0.1)',
                     color: 'var(--accent-primary)', borderRadius: '50%', display: 'flex',
-                    alignItems: 'center', justify: 'center', margin: '0 auto 16px'
+                    alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px'
                 }}>
                     <CloudUpload size={32} />
                 </div>
