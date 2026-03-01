@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ContextType, FinanceContextData, Transaction, Account, Category, Invoice } from '@/types/finance';
+import database from '@/data/database.json';
 
 interface DashboardWidget {
     id: string;
@@ -89,9 +90,9 @@ export const useFinanceStore = create<FinanceState>()(
     persist(
         (set) => ({
             currentContext: 'personal',
-            personalData: emptyContext(),
-            businessData: emptyContext(),
-            settings: {
+            personalData: (database as any).state?.personalData || emptyContext(),
+            businessData: (database as any).state?.businessData || emptyContext(),
+            settings: (database as any).state?.settings || {
                 currency: 'EUR',
                 language: 'pt-PT',
                 theme: 'light',

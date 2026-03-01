@@ -140,16 +140,42 @@ const MigrationTool: React.FC = () => {
             <div className="migration-actions" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                 <button
                     className="btn btn-primary"
-                    style={{ width: '100%', height: '48px' }}
-                    onClick={handleMigration}
-                    disabled={status === 'migrating' || status === 'success'}
+                    style={{ width: '100%', height: '54px', fontSize: '15px', fontWeight: 700, background: 'var(--accent-primary)', color: '#fff' }}
+                    onClick={async () => {
+                        const localData = localStorage.getItem('nexfinance-user-data');
+                        if (!localData) {
+                            setMessage('Nenhum dado encontrado no LocalStorage para publicar.');
+                            return;
+                        }
+
+                        setStatus('migrating');
+                        setMessage('Preparando snapshot do banco de dados para o repositório...');
+
+                        try {
+                            const res = await fetch('/api/save-db', {
+                                method: 'POST',
+                                body: localData
+                            });
+
+                            if (res.ok) {
+                                setStatus('success');
+                                setMessage('✅ Dados guardados no repositório com sucesso! Agora diga "Antigravity, podes publicar agora" para fazermos o deploy.');
+                            } else {
+                                throw new Error('Falha ao gravar no disco.');
+                            }
+                        } catch (err: any) {
+                            setStatus('error');
+                            setMessage('Erro ao publicar snapshot: ' + err.message);
+                        }
+                    }}
+                    disabled={status === 'migrating'}
                 >
-                    {status === 'migrating' ? 'A migrar...' : 'Migração Direta (Recomentado)'}
+                    {status === 'migrating' ? 'A preparar...' : 'Publicar Alterações para Nuvem (CRM Style)'}
                 </button>
 
                 <div style={{ borderTop: '1px solid var(--border-color)', margin: '12px 0', paddingTop: '24px' }}>
                     <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px', textAlign: 'center' }}>
-                        Se a migração direta falhar, use o método manual abaixo:
+                        Outras opções (Backup/Manual):
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <button
@@ -157,14 +183,14 @@ const MigrationTool: React.FC = () => {
                             style={{ width: '100%', height: '42px', fontSize: '13px' }}
                             onClick={exportData}
                         >
-                            1. Exportar JSON
+                            Exportar JSON
                         </button>
                         <label className="btn btn-secondary" style={{
                             width: '100%', height: '42px', fontSize: '13px',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             cursor: 'pointer', margin: 0
                         }}>
-                            2. Importar JSON
+                            Importar JSON
                             <input type="file" accept=".json" onChange={importData} style={{ display: 'none' }} />
                         </label>
                     </div>
