@@ -2,11 +2,12 @@ import React, { useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/pages/Dashboard';
 import Transactions from '@/pages/Transactions';
+import Expenses from '@/pages/Expenses';
+import Income from '@/pages/Income';
 import Accounts from '@/pages/Accounts';
 import Cards from '@/pages/Cards';
 import Settings from '@/pages/Settings';
 import Migration from '@/pages/Migration';
-import MonthSelector from '@/components/MonthSelector';
 import { useFinanceStore } from '@/hooks/use-store';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
@@ -28,8 +29,8 @@ const App: React.FC = () => {
                             <Route path="/" element={<Navigate to="/dashboard" replace />} />
                             <Route path="/dashboard" element={<Dashboard />} />
                             <Route path="/transactions" element={<Transactions />} />
-                            <Route path="/income" element={<Transactions forcedType="income" />} />
-                            <Route path="/expenses" element={<Transactions forcedType="expense" />} />
+                            <Route path="/income" element={<Income />} />
+                            <Route path="/expenses" element={<Expenses />} />
                             <Route path="/accounts" element={<Accounts />} />
                             <Route path="/cards" element={<Cards />} />
                             <Route path="/settings" element={<Settings />} />

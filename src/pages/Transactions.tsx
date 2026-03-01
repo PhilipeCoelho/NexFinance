@@ -22,6 +22,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
 import MonthSelector from '@/components/MonthSelector';
+import { DataTable } from '@/components/DataTable';
+import { Button } from '@/components/ui/button';
 
 interface TransactionsProps {
   forcedType?: 'income' | 'expense' | 'transfer';
@@ -31,7 +33,7 @@ const Transactions: React.FC<TransactionsProps> = ({ forcedType }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [transactionToEdit, setTransactionToEdit] = useState<any>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: 'date' | 'category' | 'origin' | 'status' | 'reconciled' | 'value' | null, direction: 'asc' | 'desc' }>({ key: 'date', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' }>({ key: 'date', direction: 'asc' });
 
   const data = useCurrentData();
   const { settings, currentContext, updateTransaction, deleteTransaction, referenceMonth } = useFinanceStore();
@@ -138,7 +140,7 @@ const Transactions: React.FC<TransactionsProps> = ({ forcedType }) => {
   const reconciledCount = sortedTransactions.filter(t => t.reconciled).length;
   const reconciliationProgress = totalTransactions > 0 ? (reconciledCount / totalTransactions) * 100 : 0;
 
-  const handleSort = (key: any) => {
+  const handleSort = (key: string) => {
     setSortConfig(prev => ({
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
@@ -197,69 +199,92 @@ const Transactions: React.FC<TransactionsProps> = ({ forcedType }) => {
         </div>
       </div>
 
-      <div className="transactions-table-container card">
-        <table className="transactions-table">
-          <thead>
-            <tr>
-              <th onClick={() => handleSort('reconciled')} style={{ width: '40px' }}>Ok</th>
-              <th onClick={() => handleSort('date')}>Data</th>
-              <th onClick={() => handleSort('description')}>Descrição</th>
-              <th onClick={() => handleSort('category')}>Categoria</th>
-              <th onClick={() => handleSort('origin')}>Origem</th>
-              <th className="text-right" onClick={() => handleSort('value')}>Valor</th>
-              <th style={{ width: '80px' }}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(sortedTransactions.length > 0) ? sortedTransactions.map(t => (
-              <tr key={t.id}>
-                <td className="text-center">
-                  <button
-                    className={`reconcile-btn ${t.reconciled ? 'active' : ''}`}
-                    onClick={() => updateTransaction(t.id, { reconciled: !t.reconciled })}
-                  >
-                    <CheckCircle2 size={16} />
-                  </button>
-                </td>
-                <td className="date-cell">
-                  {(() => {
-                    try {
-                      return format(new Date(t.date), "dd/MM/yy");
-                    } catch (e) {
-                      return 'N/A';
-                    }
-                  })()}
-                </td>
-                <td className="desc-cell">
-                  {t.description}
-                  {t.isFixed && <Pin size={10} style={{ marginLeft: 4, opacity: 0.5 }} />}
-                </td>
-                <td>{data.categories?.find(c => c.id === t.categoryId)?.name || 'Sem Categoria'}</td>
-                <td>
-                  {t.accountId
-                    ? data.accounts?.find(a => a.id === t.accountId)?.name
-                    : data.creditCards?.find(cc => cc.id === t.creditCardId)?.name || 'N/A'}
-                </td>
-                <td className={`text-right value-cell ${t.type}`}>
-                  {t.type === 'expense' ? '-' : '+'} {formatCurrency(t.value)}
-                </td>
-                <td>
-                  <div className="btn-group-table">
-                    <button className="btn-icon-table edit" onClick={() => handleEdit(t)}><Edit3 size={14} /></button>
-                    <button className="btn-icon-table delete" onClick={() => handleDelete(t.id)}><Trash2 size={14} /></button>
-                  </div>
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan={7} className="text-center" style={{ padding: '40px', color: 'var(--text-secondary)' }}>
-                  Nenhuma transação encontrada neste mês.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        data={sortedTransactions}
+        columns={[
+          {
+            key: 'reconciled',
+            label: 'Ok',
+            sortable: true,
+            align: 'center',
+            render: (t) => (
+              <button
+                className={`reconcile-btn ${t.reconciled ? 'active' : ''}`}
+                onClick={() => updateTransaction(t.id, { reconciled: !t.reconciled })}
+              >
+                <CheckCircle2 size={16} />
+              </button>
+            )
+          },
+          {
+            key: 'date',
+            label: 'Data',
+            sortable: true,
+            render: (t) => {
+              try {
+                return <span className="date-cell">{format(new Date(t.date), "dd/MM/yy")}</span>;
+              } catch { return 'N/A' }
+            }
+          },
+          {
+            key: 'description',
+            label: 'Descrição',
+            sortable: true,
+            weight: 'primary',
+            render: (t) => (
+              <span className="desc-cell flex gap-1 items-center">
+                {t.description}
+                {t.isFixed && <Pin size={10} style={{ opacity: 0.5 }} />}
+              </span>
+            )
+          },
+          {
+            key: 'category',
+            label: 'Categoria',
+            sortable: true,
+            render: (t) => data.categories?.find(c => c.id === t.categoryId)?.name || 'Sem Categoria'
+          },
+          {
+            key: 'origin',
+            label: 'Origem',
+            sortable: true,
+            render: (t) => t.accountId
+              ? data.accounts?.find(a => a.id === t.accountId)?.name
+              : data.creditCards?.find(cc => cc.id === t.creditCardId)?.name || 'N/A'
+          },
+          {
+            key: 'value',
+            label: 'Valor',
+            sortable: true,
+            align: 'right',
+            weight: 'primary',
+            render: (t) => (
+              <span className={`value-cell ${t.type}`}>
+                {t.type === 'expense' ? '-' : '+'} {formatCurrency(t.value)}
+              </span>
+            )
+          },
+          {
+            key: 'actions',
+            label: 'Ações',
+            align: 'center',
+            render: (t) => (
+              <div className="btn-group-table justify-center">
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-[var(--bg-tertiary)]" onClick={() => handleEdit(t)}>
+                  <Edit3 size={14} />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-[rgba(239,68,68,0.1)] hover:text-red-500" onClick={() => handleDelete(t.id)}>
+                  <Trash2 size={14} />
+                </Button>
+              </div>
+            )
+          }
+        ]}
+        onSort={handleSort}
+        sortConfig={sortConfig}
+        selectable
+        emptyStateMessage="Nenhuma transação encontrada neste mês."
+      />
 
       <style dangerouslySetInnerHTML={{
         __html: `
@@ -289,17 +314,6 @@ const Transactions: React.FC<TransactionsProps> = ({ forcedType }) => {
         .verif-stats { font-size: 12px; font-weight: 700; color: var(--accent-primary); }
         .verif-progress-bg { width: 100%; height: 6px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden; }
         .verif-progress-fill { height: 100%; background: var(--success); transition: width 0.4s ease; }
-
-        .transactions-table-container { overflow: hidden; border-radius: 12px; }
-        .transactions-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .transactions-table th { 
-          text-align: left; padding: 12px 16px; background: var(--bg-tertiary); 
-          color: var(--text-secondary); font-weight: 600; font-size: 11px; 
-          text-transform: uppercase; cursor: pointer; user-select: none;
-        }
-        .transactions-table th:hover { color: var(--text-primary); }
-        .transactions-table td { padding: 10px 16px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
-        .transactions-table tr:hover { background-color: var(--bg-tertiary); }
         
         .reconcile-btn { 
           width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--border);
@@ -317,12 +331,6 @@ const Transactions: React.FC<TransactionsProps> = ({ forcedType }) => {
         .value-cell.transfer { color: var(--accent-primary); }
 
         .btn-group-table { display: flex; gap: 4px; }
-        .btn-icon-table { 
-          width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
-          background: var(--bg-tertiary); color: var(--text-secondary); transition: all 0.2s;
-        }
-        .btn-icon-table:hover.edit { background: var(--accent-primary); color: white; }
-        .btn-icon-table:hover.delete { background: var(--error); color: white; }
         `}} />
     </div>
   );
