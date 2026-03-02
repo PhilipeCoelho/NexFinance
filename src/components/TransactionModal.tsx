@@ -59,6 +59,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showRecurrencePrompt, setShowRecurrencePrompt] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState<{ payload: any, stayOpen: boolean } | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [recurrenceMode, setRecurrenceMode] = useState<'single' | 'fixed' | 'installments'>('single');
 
   const initialValues = useMemo(() => {
     try {
@@ -106,6 +108,9 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
   useEffect(() => {
     if (isOpen) {
       reset(initialValues);
+      setShowDetails(false);
+      setRecurrenceMode(editingTransaction?.isFixed ? 'fixed' : editingTransaction?.isRecurring ? 'installments' : 'single');
+
       if (editingTransaction) {
         const tDate = new Date(editingTransaction.date).toISOString().split('T')[0];
         const today = new Date().toISOString().split('T')[0];
@@ -118,6 +123,23 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
       }
     }
   }, [isOpen, editingTransaction, reset, initialValues]);
+
+  // Sync recurrence mode with form
+  useEffect(() => {
+    if (recurrenceMode === 'single') {
+      setValue('isFixed', false);
+      setValue('isRecurring', false);
+    } else if (recurrenceMode === 'fixed') {
+      setValue('isFixed', true);
+      setValue('isRecurring', false);
+      setValue('frequency', 'monthly');
+    } else if (recurrenceMode === 'installments') {
+      setValue('isFixed', false);
+      setValue('isRecurring', true);
+    }
+  }, [recurrenceMode, setValue]);
+
+  const isIgnored = watch('isIgnored');
 
   const handleDateChange = (type: 'today' | 'yesterday' | 'other') => {
     setDateType(type);
@@ -140,16 +162,28 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
     return parseFloat(str) || 0;
   };
 
-  const finalizeSubmit = async (payload: any, stayOpen: boolean) => {
+  const finalizeSubmit = async (payload: any, stayOpen: boolean, forcedScope?: 'all' | 'single') => {
     try {
       const numericValue = parseCurrencyValue(payload.value);
       const finalPayload = { ...payload, value: numericValue };
 
+      // Check if we need to ask for recurrence scope
+      if (editingTransaction && (editingTransaction.isFixed || editingTransaction.isRecurring) && !forcedScope) {
+        setPendingSubmitData({ payload: finalPayload, stayOpen });
+        setShowRecurrencePrompt(true);
+        return;
+      }
+
+      const scope = forcedScope || 'all';
+
       if (editingTransaction) {
-        await updateTransaction(editingTransaction.id, finalPayload as any);
+        await updateTransaction(editingTransaction.id, finalPayload as any, scope, referenceMonth);
       } else {
         await addTransaction(finalPayload as any);
       }
+
+      setShowRecurrencePrompt(false);
+      setPendingSubmitData(null);
 
       if (stayOpen) {
         reset({ ...initialValues, value: 0, description: '' });
@@ -170,6 +204,40 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
           <span className="modal-title">{editingTransaction ? 'Editar' : 'Nova'} {transactionType === 'expense' ? 'Despesa' : 'Receita'}</span>
           <button className="close-x" onClick={onClose}><X size={18} /></button>
         </header>
+
+        {showRecurrencePrompt && (
+          <div className="recurrence-prompt-overlay animate-fade-in">
+            <div className="recurrence-prompt-card">
+              <div className="prompt-icon"><Repeat size={32} className="text-blue-500" /></div>
+              <h3>Alterar transação repetida</h3>
+              <p>Esta {transactionType === 'expense' ? 'despesa' : 'receita'} se repete. O que você deseja alterar?</p>
+
+              <div className="prompt-options">
+                <button
+                  type="button"
+                  className="prompt-opt-btn"
+                  onClick={() => finalizeSubmit(pendingSubmitData?.payload, pendingSubmitData?.stayOpen || false, 'single')}
+                >
+                  <div className="opt-title">Apenas este mês</div>
+                  <div className="opt-desc">Cria uma exceção apenas para {referenceMonth}</div>
+                </button>
+
+                <button
+                  type="button"
+                  className="prompt-opt-btn primary"
+                  onClick={() => finalizeSubmit(pendingSubmitData?.payload, pendingSubmitData?.stayOpen || false, 'all')}
+                >
+                  <div className="opt-title">Todos os meses</div>
+                  <div className="opt-desc">Altera o valor/dados para todas as parcelas/fixas</div>
+                </button>
+              </div>
+
+              <button type="button" className="prompt-cancel" onClick={() => setShowRecurrencePrompt(false)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(data => finalizeSubmit(data, false))} className="mobills-form">
           {/* Main Value Area */}
@@ -250,10 +318,104 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
               </div>
             </div>
 
-            {/* Extras */}
-            <div className="mobills-extras">
-              <button type="button" className="extra-btn"><Info size={14} /> Mais detalhes <ChevronRight size={14} /></button>
+            {/* Ignore Transaction (Moved outside details) */}
+            <div className="mobills-field-row">
+              <div className="field-icon-box"><EyeOff size={18} opacity={0.5} /></div>
+              <div className="field-content">
+                <div className="flex flex-col">
+                  <span className="field-label">Ignorar transação</span>
+                  <span className="text-[10px] text-gray-400">Não contabilizar nos gráficos</span>
+                </div>
+                <button
+                  type="button"
+                  className={`mobills-toggle ${isIgnored ? 'active' : ''}`}
+                  onClick={() => setValue('isIgnored', !isIgnored)}
+                >
+                  <div className="toggle-dot"></div>
+                </button>
+              </div>
             </div>
+
+            {/* Extras Toggle */}
+            <div className="mobills-extras">
+              <button
+                type="button"
+                className={`extra-btn ${showDetails ? 'active' : ''}`}
+                onClick={() => setShowDetails(!showDetails)}
+              >
+                <Info size={14} /> Mais detalhes <ChevronDown size={14} style={{ transform: showDetails ? 'rotate(180deg)' : 'none', transition: '0.3s' }} />
+              </button>
+            </div>
+
+            {/* Details Section */}
+            {showDetails && (
+              <div className="mobills-details-expanded">
+                {/* Recurrence Mode Selector */}
+                <div className="mobills-field-row">
+                  <div className="field-icon-box"><Repeat size={18} opacity={0.5} /></div>
+                  <div className="field-content vertical">
+                    <span className="field-label-small mb-2">Repetir esta {transactionType === 'expense' ? 'despesa' : 'receita'}?</span>
+                    <div className="recurrence-pills">
+                      <button
+                        type="button"
+                        className={recurrenceMode === 'fixed' ? 'active' : ''}
+                        onClick={() => setRecurrenceMode(recurrenceMode === 'fixed' ? 'single' : 'fixed')}
+                      >
+                        Fixa
+                      </button>
+                      <button
+                        type="button"
+                        className={recurrenceMode === 'installments' ? 'active' : ''}
+                        onClick={() => setRecurrenceMode(recurrenceMode === 'installments' ? 'single' : 'installments')}
+                      >
+                        Parcelada
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Conditional Installments Fields */}
+                {recurrenceMode === 'installments' && (
+                  <div className="installments-group animate-fade-in">
+                    <div className="mobills-field-row">
+                      <div className="field-icon-box" style={{ opacity: 0 }}><Info size={18} /></div>
+                      <div className="field-content gap-4">
+                        <div className="flex-1">
+                          <span className="field-label-small">Quantidade</span>
+                          <input
+                            type="number"
+                            {...register('installmentsCount', { min: 1 })}
+                            className="mobills-input-minimal bordered"
+                            placeholder="Ex: 12"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <span className="field-label-small">Frequência</span>
+                          <select {...register('frequency')} className="mobills-select-minimal bordered">
+                            <option value="weekly">Semanal</option>
+                            <option value="monthly">Mensal</option>
+                            <option value="yearly">Anual</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Notes */}
+                <div className="mobills-field-row">
+                  <div className="field-icon-box"><FileText size={18} opacity={0.5} /></div>
+                  <div className="field-content">
+                    <textarea
+                      {...register('notes')}
+                      className="mobills-input-minimal no-resize"
+                      placeholder="Observações..."
+                      rows={2}
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <footer className="mobills-footer">
@@ -336,7 +498,43 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
         .extra-btn { 
           display: flex; align-items: center; gap: 4px; border: none; background: transparent;
           color: #333; font-weight: 700; font-size: 12px; cursor: pointer;
+          opacity: 0.6; transition: 0.3s;
         }
+        .extra-btn:hover, .extra-btn.active { opacity: 1; color: var(--mobills-red); }
+
+        .mobills-details-expanded { 
+          background: #f9f9f9; border-radius: 12px; margin-top: 12px; padding: 0 12px;
+          animation: slideDownIn 0.3s ease-out;
+        }
+        @keyframes slideDownIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .field-label-small { font-size: 11px; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5px; display: block; }
+        
+        .recurrence-pills { display: flex; gap: 6px; }
+        .recurrence-pills button { 
+          flex: 1; padding: 6px; border-radius: 8px; border: 1px solid #ddd;
+          font-size: 11px; font-weight: 600; background: white; color: #666; cursor: pointer;
+        }
+        .recurrence-pills button.active { 
+          background: var(--mobills-red); color: white; border-color: var(--mobills-red);
+          box-shadow: 0 2px 8px rgba(255, 77, 77, 0.2);
+        }
+
+        .mobills-input-minimal.bordered, .mobills-select-minimal.bordered {
+          border: 1px solid #ddd; border-radius: 6px; padding: 6px 8px; margin-top: 4px; background: white;
+        }
+        .no-resize { resize: none; }
+        .gap-4 { gap: 16px; }
+        .flex-1 { flex: 1; }
+        .mb-2 { margin-bottom: 8px; }
+
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .text-\[10px\] { font-size: 10px; }
+        .text-gray-400 { color: #9ca3af; }
 
         .mobills-footer { 
           padding: 20px; display: flex; justify-content: space-between; align-items: center;
@@ -354,6 +552,31 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
           position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
           display: flex; align-items: center; justify-content: center; z-index: 100000;
         }
+        
+        .recurrence-prompt-overlay {
+          position: absolute; inset: 0; background: rgba(255,255,255,0.95);
+          display: flex; align-items: center; justify-content: center; z-index: 10;
+          padding: 24px; border-radius: 20px;
+        }
+        .recurrence-prompt-card { text-align: center; max-width: 320px; }
+        .prompt-icon { margin-bottom: 16px; display: flex; justify-content: center; color: var(--mobills-red); }
+        .recurrence-prompt-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; color: #333; }
+        .recurrence-prompt-card p { font-size: 14px; color: #666; margin-bottom: 24px; line-height: 1.4; }
+        
+        .prompt-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .prompt-opt-btn { 
+          padding: 12px; border-radius: 12px; border: 1px solid #ddd; background: white;
+          text-align: left; cursor: pointer; transition: 0.2s;
+        }
+        .prompt-opt-btn:hover { border-color: var(--mobills-red); background: #fff5f5; }
+        .prompt-opt-btn.primary { border-color: var(--mobills-red); }
+        .opt-title { font-weight: 700; font-size: 14px; color: #333; }
+        .opt-desc { font-size: 11px; color: #888; margin-top: 2px; }
+        
+        .prompt-cancel { background: transparent; border: none; font-size: 13px; font-weight: 600; color: #999; cursor: pointer; }
+
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         `}} />
     </div>,
     document.body
