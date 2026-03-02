@@ -286,6 +286,9 @@ const Expenses: React.FC = () => {
                                                 <button onClick={() => updateTransaction(t.id, { status: t.status === 'confirmed' ? 'forecast' : 'confirmed' })} title="Confirmar">
                                                     <Check size={16} color={t.status === 'confirmed' ? 'var(--mobills-green)' : '#cbd5e1'} />
                                                 </button>
+                                                <button onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored })} title={t.isIgnored ? "Considerar" : "Ignorar"}>
+                                                    {t.isIgnored ? <EyeOff size={16} color="var(--mobills-red)" /> : <Eye size={16} />}
+                                                </button>
                                                 <button onClick={() => handleEdit(t)} title="Editar"><Edit3 size={16} /></button>
                                                 <button title="Anexar"><Paperclip size={16} /></button>
                                                 <button onClick={() => handleDeleteTrigger(t)} title="Excluir"><Trash2 size={16} /></button>
