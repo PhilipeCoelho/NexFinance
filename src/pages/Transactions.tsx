@@ -333,9 +333,7 @@ const Transactions: React.FC = () => {
                           {t.isIgnored ? <EyeOff size={16} color="var(--mobills-red)" /> : <Eye size={16} />}
                         </button>
                         <button onClick={() => handleEdit(t)} title="Editar"><Edit3 size={16} /></button>
-                        <button title="Anexar"><Paperclip size={16} /></button>
                         <button onClick={() => handleDeleteTrigger(t)} title="Excluir"><Trash2 size={16} /></button>
-                        <button title="Mais"><MoreVertical size={16} /></button>
                       </div>
                     </td>
                   </tr>
