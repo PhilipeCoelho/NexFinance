@@ -6,6 +6,9 @@ import Expenses from '@/pages/Expenses';
 import Income from '@/pages/Income';
 import Accounts from '@/pages/Accounts';
 import Cards from '@/pages/Cards';
+import Goals from '@/pages/Goals';
+import Planning from '@/pages/Planning';
+import Categories from '@/pages/Categories';
 import Settings from '@/pages/Settings';
 import Migration from '@/pages/Migration';
 import { useFinanceStore } from '@/hooks/use-store';
@@ -33,6 +36,9 @@ const App: React.FC = () => {
                             <Route path="/expenses" element={<Expenses />} />
                             <Route path="/accounts" element={<Accounts />} />
                             <Route path="/cards" element={<Cards />} />
+                            <Route path="/goals" element={<Goals />} />
+                            <Route path="/planning" element={<Planning />} />
+                            <Route path="/categories" element={<Categories />} />
                             <Route path="/settings" element={<Settings />} />
                             <Route path="/migration" element={<Migration />} />
                         </Routes>

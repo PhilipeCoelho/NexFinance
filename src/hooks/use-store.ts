@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ContextType, FinanceContextData, Transaction, Account, Category, Invoice } from '@/types/finance';
+import { ContextType, FinanceContextData, Transaction, Account, Category, Invoice, CreditCard } from '@/types/finance';
 import database from '@/data/database.json';
 
 interface DashboardWidget {
@@ -44,6 +44,11 @@ interface FinanceState {
     addAccount: (account: Omit<Account, 'id' | 'currentBalance' | 'predictedBalance'>) => void;
     updateAccount: (id: string, account: Partial<Account>) => void;
     deleteAccount: (id: string) => void;
+
+    // Credit Cards
+    addCreditCard: (card: Omit<CreditCard, 'id' | 'limitAvailable' | 'status'>) => void;
+    updateCreditCard: (id: string, card: Partial<CreditCard>) => void;
+    deleteCreditCard: (id: string) => void;
 
     // Categories
     addCategory: (category: Omit<Category, 'id'>) => void;
@@ -448,6 +453,53 @@ export const useFinanceStore = create<FinanceState>()(
                 };
             }),
 
+            // Credit Cards Actions
+            addCreditCard: (card) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                const newCard: CreditCard = {
+                    ...card,
+                    id: Math.random().toString(36).substr(2, 9),
+                    limitAvailable: card.limitTotal,
+                    status: 'active'
+                };
+                return {
+                    [key]: {
+                        ...state[key],
+                        creditCards: [...state[key].creditCards, newCard]
+                    }
+                };
+            }),
+
+            updateCreditCard: (id, updated) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                return {
+                    [key]: {
+                        ...state[key],
+                        creditCards: state[key].creditCards.map(c => c.id === id ? { ...c, ...updated } : c)
+                    }
+                };
+            }),
+
+            deleteCreditCard: (id) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                // Archive if has transactions
+                const hasHistory = state[key].transactions.some(t => t.creditCardId === id);
+                if (hasHistory) {
+                    return {
+                        [key]: {
+                            ...state[key],
+                            creditCards: state[key].creditCards.map(c => c.id === id ? { ...c, status: 'archived' } : c)
+                        }
+                    };
+                }
+                return {
+                    [key]: {
+                        ...state[key],
+                        creditCards: state[key].creditCards.filter(c => c.id !== id)
+                    }
+                };
+            }),
+
             // Categories Actions
             addCategory: (category) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
@@ -499,4 +551,35 @@ if (typeof window !== 'undefined') {
             useFinanceStore.getState().syncWithStorage();
         }
     });
+
+    // Auto-sync to disk on every change (Dev mode only)
+    if (window.location.hostname === 'localhost') {
+        let timeout: any;
+        useFinanceStore.subscribe((state) => {
+            // Safety: Don't sync if the state is empty (prevents cleaning database.json on new browser sessions)
+            if (!state.personalData?.accounts?.length && !state.personalData?.transactions?.length) {
+                return;
+            }
+
+            if (timeout) clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                const data = {
+                    state: {
+                        currentContext: state.currentContext,
+                        personalData: state.personalData,
+                        businessData: state.businessData,
+                        settings: state.settings,
+                        isLoading: state.isLoading,
+                        referenceMonth: state.referenceMonth
+                    },
+                    version: 0
+                };
+                fetch('/api/save-db', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                }).catch(err => console.error("AUTO-SYNC ERROR:", err));
+            }, 2000); // 2s debounce
+        });
+    }
 }
