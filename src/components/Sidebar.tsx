@@ -12,7 +12,8 @@ import {
   ChevronDown,
   Briefcase,
   User,
-  CreditCard
+  CreditCard,
+  LogOut
 } from 'lucide-react';
 import { useFinanceStore } from '@/hooks/use-store';
 import { ContextType } from '@/types/finance';
@@ -20,7 +21,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import MonthSelector from './MonthSelector';
 
 const Sidebar: React.FC = () => {
-  const { currentContext, setContext } = useFinanceStore();
+  const { currentContext, setContext, signOut } = useFinanceStore();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -79,6 +80,19 @@ const Sidebar: React.FC = () => {
         >
           <Settings size={20} />
           <span>Configurações</span>
+        </button>
+
+        <button
+          className="nav-item logout"
+          style={{ color: '#ef4444' }}
+          onClick={() => {
+            if (confirm('Deseja realmente sair?')) {
+              signOut();
+            }
+          }}
+        >
+          <LogOut size={20} />
+          <span>Sair da conta</span>
         </button>
 
         <div className="sidebar-brand">

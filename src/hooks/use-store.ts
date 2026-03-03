@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ContextType, FinanceContextData, Transaction, Account, Category, Invoice, CreditCard } from '@/types/finance';
 import database from '@/data/database.json';
+import { supabase } from '@/services/supabase';
 
 interface DashboardWidget {
     id: string;
@@ -25,6 +26,12 @@ interface FinanceState {
     referenceMonth: string;
     viewMonth: string;
 
+    // Auth
+    session: any | null;
+    user: any | null;
+    isAuthenticated: boolean;
+    authLoading: boolean;
+
     // Actions
     setContext: (context: ContextType) => void;
     setCurrency: (currency: string) => void;
@@ -34,6 +41,12 @@ interface FinanceState {
     setReferenceMonth: (month: string) => void;
     setViewMonth: (month: string) => void;
     syncWithStorage: () => void;
+
+    // Auth Actions
+    signIn: (email: string, pass: string) => Promise<{ error: any }>;
+    signUp: (email: string, pass: string) => Promise<{ error: any }>;
+    signOut: () => Promise<void>;
+    setSession: (session: any) => void;
 
     // ... (rest of actions)
 
@@ -105,9 +118,15 @@ export const useFinanceStore = create<FinanceState>()(
                 theme: 'light',
                 dashboardWidgets: DEFAULT_WIDGETS,
             },
-            isLoading: false,
             referenceMonth: new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7),
             viewMonth: new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7),
+
+            isLoading: false,
+            // Auth Initial State
+            session: null,
+            user: null,
+            isAuthenticated: false,
+            authLoading: true,
 
             setContext: (context) => set({ currentContext: context }),
 
@@ -126,7 +145,43 @@ export const useFinanceStore = create<FinanceState>()(
             setReferenceMonth: (month) => set({ referenceMonth: month }),
             setViewMonth: (month) => set({ viewMonth: month }),
 
-            // Helper to manually trigger rehydration (sync across tabs)
+            // Auth Implementations
+            setSession: (session) => set({
+                session,
+                user: session?.user || null,
+                isAuthenticated: !!session,
+                authLoading: false
+            }),
+
+            signIn: async (email, password) => {
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                if (!error && data.session) {
+                    set({
+                        session: data.session,
+                        user: data.session.user,
+                        isAuthenticated: true
+                    });
+                }
+                return { error };
+            },
+
+            signUp: async (email, password) => {
+                const { data, error } = await supabase.auth.signUp({ email, password });
+                if (!error && data.session) {
+                    set({
+                        session: data.session,
+                        user: data.session.user,
+                        isAuthenticated: true
+                    });
+                }
+                return { error };
+            },
+
+            signOut: async () => {
+                await supabase.auth.signOut();
+                set({ session: null, user: null, isAuthenticated: false });
+            },
+
             syncWithStorage: () => {
                 const storage = localStorage.getItem('nexfinance-user-data');
                 if (storage) {

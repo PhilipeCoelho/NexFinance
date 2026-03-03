@@ -11,16 +11,54 @@ import Planning from '@/pages/Planning';
 import Categories from '@/pages/Categories';
 import Settings from '@/pages/Settings';
 import Migration from '@/pages/Migration';
+import Login from '@/pages/Login';
 import { useFinanceStore } from '@/hooks/use-store';
+import { supabase } from '@/services/supabase';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
 const App: React.FC = () => {
-    const { settings } = useFinanceStore();
+    const { settings, isAuthenticated, authLoading, setSession } = useFinanceStore();
 
     useEffect(() => {
         document.documentElement.classList.remove('light', 'dark');
         document.documentElement.classList.add(settings.theme || 'light');
     }, [settings.theme]);
+
+    useEffect(() => {
+        // Initial session check
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setSession(session);
+        });
+
+        // Listen for changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, [setSession]);
+
+    if (authLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-white">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-500 font-medium">NexFinance está a carregar...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return (
+            <Router>
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="*" element={<Navigate to="/login" replace />} />
+                </Routes>
+            </Router>
+        );
+    }
 
     return (
         <Router>
@@ -41,6 +79,7 @@ const App: React.FC = () => {
                             <Route path="/categories" element={<Categories />} />
                             <Route path="/settings" element={<Settings />} />
                             <Route path="/migration" element={<Migration />} />
+                            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
                         </Routes>
                     </div>
                 </main>
