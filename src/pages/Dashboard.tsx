@@ -757,17 +757,38 @@ const Dashboard: React.FC = () => {
         /* Resoluções Mobile */
         @media (max-width: 768px) {
             .premium-header {
-                overflow-x: auto;
+                gap: 8px;
                 padding-bottom: 16px;
-                scroll-snap-type: x mandatory;
-                -webkit-overflow-scrolling: touch;
-            }
-            .premium-header::-webkit-scrollbar {
-                display: none;
+                overflow-x: visible;
             }
             .premium-kpi {
-                min-width: 220px;
-                scroll-snap-align: start;
+                padding: 12px 6px;
+                gap: 8px;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+                min-width: 0;
+            }
+            .icon-box {
+                width: 32px;
+                height: 32px;
+                margin: 0 auto;
+            }
+            .icon-box svg {
+                width: 16px;
+                height: 16px;
+            }
+            .info {
+                align-items: center;
+                gap: 2px;
+            }
+            .val {
+                font-size: .95rem; /* Even smaller to ensure it doesn't break line */
+            }
+            .lbl {
+                font-size: 8px;
+                letter-spacing: 0;
             }
             .premium-add-btn {
                 display: none; /* Ocultar no mobile para não conflitar com o FAB (botão flutuante central) */
