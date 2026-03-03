@@ -12,6 +12,7 @@ import Categories from '@/pages/Categories';
 import Settings from '@/pages/Settings';
 import Migration from '@/pages/Migration';
 import Login from '@/pages/Login';
+import MobileNav from '@/components/MobileNav';
 import { useFinanceStore } from '@/hooks/use-store';
 import { supabase } from '@/services/supabase';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -83,6 +84,7 @@ const App: React.FC = () => {
                         </Routes>
                     </div>
                 </main>
+                <MobileNav />
             </div>
         </Router>
     );

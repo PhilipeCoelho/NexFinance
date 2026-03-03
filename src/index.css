@@ -1400,6 +1400,130 @@ button {
   background: #f1f5f9;
 }
 
+/* Mobile Responsiveness & iPhone Optimization */
+@media (max-width: 768px) {
+  :root {
+    --space-6: 0.75rem;
+    /* Reduce padding on mobile */
+  }
+
+  .sidebar {
+    display: none !important;
+  }
+
+  .app-container {
+    flex-direction: column;
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+
+  .main-content {
+    padding-bottom: calc(70px + env(safe-area-inset-bottom, 20px));
+  }
+
+  .scroll-area {
+    padding: 12px;
+  }
+
+  /* Bottom Navigation */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(65px + env(safe-area-inset-bottom, 20px));
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-light);
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    flex: 1;
+    font-size: 10px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .mobile-nav-item.active {
+    color: var(--accent-primary);
+  }
+
+  .mobile-nav-item svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Center Plus Button */
+  .mobile-nav-add {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--mobills-accent), #ff7675);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    box-shadow: 0 8px 16px rgba(255, 77, 77, 0.3);
+    transform: translateY(-15px);
+    border: 3px solid var(--bg-primary);
+  }
+
+  /* Table adjustments */
+  .mobills-table-container {
+    margin: 0 -12px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .mobills-table th:not(:first-child):not(.date-col),
+  .mobills-table td:not(:first-child):not(.date-col) {
+    display: none;
+    /* Hide most columns on mobile table, except desc and date */
+  }
+
+  /* Show value column too */
+  .mobills-table th.value-col,
+  .mobills-table td.value-col {
+    display: table-cell !important;
+  }
+
+  /* Modal iPhone Optimization */
+  .mobills-modal {
+    width: 100%;
+    height: 90vh;
+    bottom: 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .hero-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 5px;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none;
+  }
+}
+
 .ignored-summary-row.active {
   background: #fef2f2;
 }

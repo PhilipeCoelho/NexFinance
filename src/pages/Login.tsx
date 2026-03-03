@@ -1,50 +1,50 @@
 import React, { useState } from 'react';
 import { useFinanceStore } from '@/hooks/use-store';
 import {
-    TrendingUp,
-    Mail,
-    Lock,
-    ArrowRight,
-    CheckCircle2,
-    AlertCircle,
-    ShieldCheck,
-    Zap
+  TrendingUp,
+  Mail,
+  Lock,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  ShieldCheck,
+  Zap
 } from 'lucide-react';
 
 const Login: React.FC = () => {
-    const { signIn, signUp } = useFinanceStore();
-    const [isSignUp, setIsSignUp] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState(false);
+  const { signIn, signUp } = useFinanceStore();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-        try {
-            if (isSignUp) {
-                const { error: signUpError } = await signUp(email, password);
-                if (signUpError) throw signUpError;
-                setSuccess(true);
-                // Supabase auto-signs in or sends verification
-            } else {
-                const { error: signInError } = await signIn(email, password);
-                if (signInError) throw signInError;
-            }
-        } catch (err: any) {
-            setError(err.message || 'Ocorreu um erro. Verifique os seus dados.');
-        } finally {
-            setLoading(false);
-        }
-    };
+    try {
+      if (isSignUp) {
+        const { error: signUpError } = await signUp(email, password);
+        if (signUpError) throw signUpError;
+        setSuccess(true);
+        // Supabase auto-signs in or sends verification
+      } else {
+        const { error: signInError } = await signIn(email, password);
+        if (signInError) throw signInError;
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ocorreu um erro. Verifique os seus dados.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="login-container min-h-screen flex items-center justify-center p-4 bg-[#f8fafc]">
-            <style>{`
+  return (
+    <div className="login-container min-h-screen flex items-center justify-center p-4 bg-[#f8fafc]">
+      <style>{`
         .login-card {
           background: white;
           border-radius: 24px;
@@ -165,9 +165,25 @@ const Login: React.FC = () => {
         .success-msg {
           background: #f0fdf4;
           color: #15803d;
-          padding: 20px;
-          border-radius: 16px;
+          padding: 30px 20px;
+          border-radius: 20px;
           text-align: center;
+          border: 1px solid #bbf7d0;
+          animation: zoomIn 0.4s ease-out;
+        }
+        @keyframes zoomIn {
+          from { opacity: 0; transform: scale(0.9); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .success-msg h3 {
+          font-weight: 800;
+          color: #166534;
+          margin-top: 10px;
+        }
+        .success-msg p {
+          color: #15803d;
+          font-size: 14px;
+          line-height: 1.6;
         }
         .feature-grid {
           display: grid;
@@ -188,92 +204,95 @@ const Login: React.FC = () => {
         }
       `}</style>
 
-            <div className="login-card">
-                <div className="login-header">
-                    <div className="logo-box">
-                        <TrendingUp size={30} color="white" />
-                    </div>
-                    <h1 className="text-2xl font-extrabold text-[#1e293b] mb-1">NexFinance</h1>
-                    <p className="text-[#64748b] text-sm">Controle financeiro inteligente</p>
-                </div>
-
-                <div className="login-body">
-                    {success ? (
-                        <div className="success-msg animate-fade-in">
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <CheckCircle2 size={32} className="text-green-600" />
-                            </div>
-                            <h3 className="font-bold text-lg mb-2">Conta Criada!</h3>
-                            <p className="text-sm mb-6">Verifique o seu e-mail para validar o seu acesso antes de entrar.</p>
-                            <button
-                                className="btn-login"
-                                onClick={() => { setIsSignUp(false); setSuccess(false); }}
-                            >
-                                IR PARA LOGIN
-                            </button>
-                        </div>
-                    ) : (
-                        <form onSubmit={handleSubmit}>
-                            <div className="feature-grid">
-                                <div className="feature-item"><Zap size={14} className="text-blue-500" /> Rápido</div>
-                                <div className="feature-item"><ShieldCheck size={14} className="text-blue-500" /> Seguro</div>
-                            </div>
-
-                            {error && (
-                                <div className="error-msg">
-                                    <AlertCircle size={16} />
-                                    <span>{error}</span>
-                                </div>
-                            )}
-
-                            <div className="input-group">
-                                <input
-                                    type="email"
-                                    className="login-input"
-                                    placeholder="Seu e-mail"
-                                    required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                                <Mail size={18} className="input-icon" />
-                            </div>
-
-                            <div className="input-group">
-                                <input
-                                    type="password"
-                                    className="login-input"
-                                    placeholder="Sua senha"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                />
-                                <Lock size={18} className="input-icon" />
-                            </div>
-
-                            <button className="btn-login" disabled={loading}>
-                                {loading ? (
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                ) : (
-                                    <>
-                                        {isSignUp ? 'CRIAR CONTA' : 'ENTRAR'}
-                                        <ArrowRight size={18} />
-                                    </>
-                                )}
-                            </button>
-
-                            <div className="toggle-mode">
-                                {isSignUp ? (
-                                    <>Já tem uma conta? <span className="toggle-link" onClick={() => setIsSignUp(false)}>Entrar</span></>
-                                ) : (
-                                    <>Ainda não tem conta? <span className="toggle-link" onClick={() => setIsSignUp(true)}>Criar agora</span></>
-                                )}
-                            </div>
-                        </form>
-                    )}
-                </div>
-            </div>
+      <div className="login-card">
+        <div className="login-header">
+          <div className="logo-box">
+            <TrendingUp size={30} color="white" />
+          </div>
+          <h1 className="text-2xl font-extrabold text-[#1e293b] mb-1">NexFinance</h1>
+          <p className="text-[#64748b] text-sm">Controle financeiro inteligente</p>
         </div>
-    );
+
+        <div className="login-body">
+          {success ? (
+            <div className="success-msg animate-fade-in">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 size={32} className="text-green-600" />
+              </div>
+              <h3 className="text-xl mb-2">Verifique o seu e-mail</h3>
+              <p className="mb-8">
+                Enviámos um link de confirmação para <strong>{email}</strong>. <br />
+                Por favor, valide o seu e-mail para ativar o seu acesso ao NexFinance.
+              </p>
+              <button
+                className="btn-login"
+                onClick={() => { setIsSignUp(false); setSuccess(false); }}
+              >
+                VOLTAR PARA O LOGIN
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="feature-grid">
+                <div className="feature-item"><Zap size={14} className="text-blue-500" /> Rápido</div>
+                <div className="feature-item"><ShieldCheck size={14} className="text-blue-500" /> Seguro</div>
+              </div>
+
+              {error && (
+                <div className="error-msg">
+                  <AlertCircle size={16} />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="input-group">
+                <input
+                  type="email"
+                  className="login-input"
+                  placeholder="Seu e-mail"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                <Mail size={18} className="input-icon" />
+              </div>
+
+              <div className="input-group">
+                <input
+                  type="password"
+                  className="login-input"
+                  placeholder="Sua senha"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <Lock size={18} className="input-icon" />
+              </div>
+
+              <button className="btn-login" disabled={loading}>
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    {isSignUp ? 'CRIAR CONTA' : 'ENTRAR'}
+                    <ArrowRight size={18} />
+                  </>
+                )}
+              </button>
+
+              <div className="toggle-mode">
+                {isSignUp ? (
+                  <>Já tem uma conta? <span className="toggle-link" onClick={() => setIsSignUp(false)}>Entrar</span></>
+                ) : (
+                  <>Ainda não tem conta? <span className="toggle-link" onClick={() => setIsSignUp(true)}>Criar agora</span></>
+                )}
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Login;
