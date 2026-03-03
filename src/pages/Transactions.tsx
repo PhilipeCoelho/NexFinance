@@ -33,6 +33,7 @@ const Transactions: React.FC = () => {
   const [transactionToEdit, setTransactionToEdit] = useState<any>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<any>(null);
   const [showDeletePrompt, setShowDeletePrompt] = useState(false);
+  const [showIgnored, setShowIgnored] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'asc' });
 
   const data = useCurrentData();
@@ -150,6 +151,15 @@ const Transactions: React.FC = () => {
     }
     return sortableItems;
   }, [filteredTransactions, sortConfig, data]);
+
+  const finalDisplayTransactions = useMemo(() => {
+    if (showIgnored) return sortedTransactions;
+    return sortedTransactions.filter(e => !e.isIgnored);
+  }, [sortedTransactions, showIgnored]);
+
+  const ignoredCount = useMemo(() => {
+    return sortedTransactions.filter(e => e.isIgnored).length;
+  }, [sortedTransactions]);
 
   const getSortIcon = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) return <ChevronDown size={14} opacity={0.2} style={{ marginLeft: '4px' }} />;
@@ -286,7 +296,7 @@ const Transactions: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {sortedTransactions.map(t => (
+                {finalDisplayTransactions.map(t => (
                   <tr key={t.id} className={t.isIgnored ? "mobills-row ignored" : "mobills-row"}>
                     <td className="status-cell">
                       <div className="status-indicator-wrapper">
@@ -357,6 +367,30 @@ const Transactions: React.FC = () => {
                     </td>
                   </tr>
                 ))}
+
+                {!showIgnored && ignoredCount > 0 && (
+                  <tr className="ignored-summary-row" onClick={() => setShowIgnored(true)}>
+                    <td colSpan={7}>
+                      <div className="ignored-summary-content">
+                        <EyeOff size={14} className="mr-2" />
+                        <span>{ignoredCount} {ignoredCount === 1 ? 'transação ignorada' : 'transações ignoradas'} ocultas</span>
+                        <button className="reveal-btn">MOSTRAR</button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+
+                {showIgnored && ignoredCount > 0 && (
+                  <tr className="ignored-summary-row active" onClick={() => setShowIgnored(false)}>
+                    <td colSpan={7}>
+                      <div className="ignored-summary-content">
+                        <Eye size={14} className="mr-2" />
+                        <span>Ocultar transações ignoradas</span>
+                        <button className="reveal-btn">OCULTAR</button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 

@@ -35,6 +35,7 @@ const Expenses: React.FC = () => {
     const [expenseToEdit, setExpenseToEdit] = useState<any>(null);
     const [transactionToDelete, setTransactionToDelete] = useState<any>(null);
     const [showDeletePrompt, setShowDeletePrompt] = useState(false);
+    const [showIgnored, setShowIgnored] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'asc' });
 
     const data = useCurrentData();
@@ -141,6 +142,15 @@ const Expenses: React.FC = () => {
         }
         return sortableItems;
     }, [filteredExpenses, sortConfig, data]);
+
+    const finalDisplayExpenses = useMemo(() => {
+        if (showIgnored) return sortedExpenses;
+        return sortedExpenses.filter(e => !e.isIgnored);
+    }, [sortedExpenses, showIgnored]);
+
+    const ignoredCount = useMemo(() => {
+        return sortedExpenses.filter(e => e.isIgnored).length;
+    }, [sortedExpenses]);
 
     const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) return <ChevronDown size={14} opacity={0.2} style={{ marginLeft: '4px' }} />;
@@ -263,7 +273,7 @@ const Expenses: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedExpenses.map(t => (
+                                {finalDisplayExpenses.map(t => (
                                     <tr key={t.id} className={t.isIgnored ? "mobills-row ignored" : "mobills-row"}>
                                         <td className="status-cell">
                                             <div className="status-indicator-wrapper">
@@ -332,6 +342,30 @@ const Expenses: React.FC = () => {
                                         </td>
                                     </tr>
                                 ))}
+
+                                {!showIgnored && ignoredCount > 0 && (
+                                    <tr className="ignored-summary-row" onClick={() => setShowIgnored(true)}>
+                                        <td colSpan={7}>
+                                            <div className="ignored-summary-content">
+                                                <EyeOff size={14} className="mr-2" />
+                                                <span>{ignoredCount} {ignoredCount === 1 ? 'despesa ignorada' : 'despesas ignoradas'} ocultas</span>
+                                                <button className="reveal-btn">MOSTRAR</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+
+                                {showIgnored && ignoredCount > 0 && (
+                                    <tr className="ignored-summary-row active" onClick={() => setShowIgnored(false)}>
+                                        <td colSpan={7}>
+                                            <div className="ignored-summary-content">
+                                                <Eye size={14} className="mr-2" />
+                                                <span>Ocultar despesas ignoradas</span>
+                                                <button className="reveal-btn">OCULTAR</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                         {filteredExpenses.length === 0 && <div className="empty-state-mobills">Nenhuma despesa para este mês.</div>}

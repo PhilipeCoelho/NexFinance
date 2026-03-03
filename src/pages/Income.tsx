@@ -35,6 +35,7 @@ const Income: React.FC = () => {
     const [incomeToEdit, setIncomeToEdit] = useState<any>(null);
     const [transactionToDelete, setTransactionToDelete] = useState<any>(null);
     const [showDeletePrompt, setShowDeletePrompt] = useState(false);
+    const [showIgnored, setShowIgnored] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'asc' });
 
     const data = useCurrentData();
@@ -141,6 +142,15 @@ const Income: React.FC = () => {
         }
         return sortableItems;
     }, [filteredIncome, sortConfig, data]);
+
+    const finalDisplayIncome = useMemo(() => {
+        if (showIgnored) return sortedIncome;
+        return sortedIncome.filter(e => !e.isIgnored);
+    }, [sortedIncome, showIgnored]);
+
+    const ignoredCount = useMemo(() => {
+        return sortedIncome.filter(e => e.isIgnored).length;
+    }, [sortedIncome]);
 
     const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) return <ChevronDown size={14} opacity={0.2} style={{ marginLeft: '4px' }} />;
@@ -265,7 +275,7 @@ const Income: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedIncome.map(t => (
+                                {finalDisplayIncome.map(t => (
                                     <tr key={t.id} className={t.isIgnored ? "mobills-row ignored" : "mobills-row"}>
                                         <td className="status-cell">
                                             <div className="status-indicator-wrapper">
@@ -334,6 +344,30 @@ const Income: React.FC = () => {
                                         </td>
                                     </tr>
                                 ))}
+
+                                {!showIgnored && ignoredCount > 0 && (
+                                    <tr className="ignored-summary-row" onClick={() => setShowIgnored(true)}>
+                                        <td colSpan={7}>
+                                            <div className="ignored-summary-content">
+                                                <EyeOff size={14} className="mr-2" />
+                                                <span>{ignoredCount} {ignoredCount === 1 ? 'receita ignorada' : 'receitas ignoradas'} ocultas</span>
+                                                <button className="reveal-btn">MOSTRAR</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+
+                                {showIgnored && ignoredCount > 0 && (
+                                    <tr className="ignored-summary-row active" onClick={() => setShowIgnored(false)}>
+                                        <td colSpan={7}>
+                                            <div className="ignored-summary-content">
+                                                <Eye size={14} className="mr-2" />
+                                                <span>Ocultar receitas ignoradas</span>
+                                                <button className="reveal-btn">OCULTAR</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                         {filteredIncome.length === 0 && <div className="empty-state-mobills">Nenhuma receita para este mês.</div>}
