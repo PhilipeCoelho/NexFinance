@@ -165,7 +165,26 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
   const finalizeSubmit = async (payload: any, stayOpen: boolean, forcedScope?: 'all' | 'single') => {
     try {
       const numericValue = parseCurrencyValue(payload.value);
-      const finalPayload = { ...payload, value: numericValue };
+
+      // Structure the data as expected by the Transaction interface
+      const finalPayload: any = {
+        ...payload,
+        value: numericValue,
+        description: payload.description || '',
+        notes: payload.notes || ''
+      };
+
+      // Wrap recurrence data if applicable
+      if (payload.isFixed || payload.isRecurring) {
+        finalPayload.recurrence = {
+          type: payload.isFixed ? 'fixed' : 'installments',
+          frequency: payload.frequency || 'monthly',
+          installmentsCount: payload.isRecurring ? Number(payload.installmentsCount) : undefined,
+          excludedDates: editingTransaction?.recurrence?.excludedDates || []
+        };
+      } else {
+        finalPayload.recurrence = undefined;
+      }
 
       // Check if we need to ask for recurrence scope
       if (editingTransaction && (editingTransaction.isFixed || editingTransaction.isRecurring) && !forcedScope) {
@@ -186,11 +205,22 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
       setPendingSubmitData(null);
 
       if (stayOpen) {
-        reset({ ...initialValues, value: 0, description: '' });
+        // Reset while preserving some context
+        reset({
+          ...initialValues,
+          value: 0,
+          description: '',
+          notes: '',
+          isFixed: false,
+          isRecurring: false,
+          installmentsCount: 1
+        });
+        setRecurrenceMode('single');
       } else {
         onClose();
       }
     } catch (err) {
+      console.error("MODAL: Error saving transaction", err);
       alert("Erro ao salvar transação");
     }
   };

@@ -310,7 +310,10 @@ const Transactions: React.FC = () => {
                     </td>
                     <td className="date-cell">{format(new Date(t.date + 'T12:00:00'), 'dd/MM/yyyy')}</td>
                     <td className="desc-cell">
-                      <span className="desc-text">{t.description}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span className="desc-text">{t.description}</span>
+                        {t.notes && <span className="notes-preview" style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px', fontStyle: 'italic' }}>{t.notes}</span>}
+                      </div>
                     </td>
                     <td>
                       <div className="cat-cell">
