@@ -231,7 +231,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
 
   return createPortal(
     <div className="modal-overlay" onClick={onClose}>
-      <div className="mobills-modal glass shadow-premium" onClick={e => e.stopPropagation()}>
+      <div className="mobills-modal shadow-premium" onClick={e => e.stopPropagation()}>
         <header className="mobills-modal-header">
           <span className="modal-title">{editingTransaction ? 'Editar' : 'Nova'} {transactionType === 'expense' ? 'Despesa' : 'Receita'}</span>
           <button className="close-x" onClick={onClose}><X size={18} /></button>
@@ -466,11 +466,19 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
       <style dangerouslySetInnerHTML={{
         __html: `
         .mobills-modal { 
-          width: 450px; background: white; border-radius: 20px; overflow: hidden; 
-          display: flex; flex-direction: column; animation: mobillsSlideIn 0.3s ease-out;
+          width: 450px; 
+          max-width: 95vw;
+          max-height: 90vh; /* Prevent going off-screen */
+          background: white; 
+          border-radius: 24px; 
+          overflow: hidden; 
+          display: flex; 
+          flex-direction: column; 
+          animation: mobillsSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+          border: 1px solid #eee;
         }
         @keyframes mobillsSlideIn {
-          from { transform: translateY(40px); opacity: 0; }
+          from { transform: translateY(30px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
         
@@ -492,10 +500,20 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
         .value-input.expense { color: var(--mobills-red); }
         .value-input.income { color: var(--mobills-green); }
 
-        .mobills-fields-scroll { padding: 0 20px 20px 20px; display: flex; flex-direction: column; gap: 4px; }
+        .mobills-fields-scroll { 
+          padding: 0 24px 24px 24px; 
+          display: flex; 
+          flex-direction: column; 
+          gap: 4px;
+          overflow-y: auto; /* Enable scrolling for fields */
+          flex: 1;
+        }
         .mobills-field-row { 
-          display: flex; align-items: center; gap: 16px; padding: 12px 0;
-          border-bottom: 1px solid #f1f1f1;
+          display: flex; 
+          align-items: center; 
+          gap: 16px; 
+          padding: 14px 0;
+          border-bottom: 1px solid #f8f8f8;
         }
         .field-icon-box { width: 24px; display: flex; justify-content: center; color: #555; }
         .field-content { flex: 1; display: flex; align-items: center; justify-content: space-between; }
@@ -535,7 +553,11 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
         .extra-btn:hover, .extra-btn.active { opacity: 1; color: var(--mobills-red); }
 
         .mobills-details-expanded { 
-          background: #f9f9f9; border-radius: 12px; margin-top: 12px; padding: 0 12px;
+          background: #fff; /* Solid white instead of gray */
+          border: 1px solid #f0f0f0;
+          border-radius: 16px; 
+          margin-top: 12px; 
+          padding: 4px 12px;
           animation: slideDownIn 0.3s ease-out;
         }
         @keyframes slideDownIn {
@@ -569,8 +591,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
         .text-gray-400 { color: #9ca3af; }
 
         .mobills-footer { 
-          padding: 20px; display: flex; justify-content: space-between; align-items: center;
-          background: #fafafa; border-top: 1px solid #eee;
+          padding: 20px 24px; 
+          display: flex; 
+          justify-content: space-between; 
+          align-items: center;
+          background: white; /* Solid white */
+          border-top: 1px solid #f0f0f0;
         }
         .btn-text-only { font-size: 12px; font-weight: 700; color: var(--mobills-red); background: transparent; border: none; cursor: pointer; }
         .btn-mobills-save { 
