@@ -725,6 +725,7 @@ const Dashboard: React.FC = () => {
             width: 480px; background: var(--bg-primary); border: 1px solid var(--border-light);
             border-radius: 24px; display: flex; flex-direction: column; overflow: hidden;
             box-shadow: 0 40px 100px rgba(0,0,0,0.3);
+            max-width: 90vw;
         }
         .config-header { padding: 24px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: flex-start; }
         .config-header h2 { font-size: 1.25rem; font-weight: 700; }
@@ -732,7 +733,7 @@ const Dashboard: React.FC = () => {
         .close-x { background: transparent; color: var(--text-secondary); opacity: 0.5; padding: 4px; }
         .close-x:hover { opacity: 1; }
 
-        .config-scroll-area { padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: 500px; overflow-y: auto; }
+        .config-scroll-area { padding: 16px; display: flex; flex-direction: column; gap: 8px; max-height: 50vh; overflow-y: auto; }
         .config-reorder-item { 
             display: flex; align-items: center; gap: 12px; padding: 12px 16px;
             background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: 12px;
@@ -752,6 +753,32 @@ const Dashboard: React.FC = () => {
         .reorder-actions button:disabled { opacity: 0.2; cursor: not-allowed; }
 
         .config-footer { padding: 20px; border-top: 1px solid var(--border-light); }
+
+        /* Resoluções Mobile */
+        @media (max-width: 768px) {
+            .premium-header {
+                overflow-x: auto;
+                padding-bottom: 16px;
+                scroll-snap-type: x mandatory;
+                -webkit-overflow-scrolling: touch;
+            }
+            .premium-header::-webkit-scrollbar {
+                display: none;
+            }
+            .premium-kpi {
+                min-width: 220px;
+                scroll-snap-align: start;
+            }
+            .premium-add-btn {
+                display: none; /* Ocultar no mobile para não conflitar com o FAB (botão flutuante central) */
+            }
+            .dashboard-premium {
+                padding-bottom: 100px; /* Espaço extra para a navbar inferior */
+            }
+            .premium-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         `}} />
     </div>
   );
