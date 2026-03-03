@@ -22,7 +22,8 @@ interface FinanceState {
     businessData: FinanceContextData;
     settings: Settings;
     isLoading: boolean;
-    referenceMonth: string; // YYYY-MM
+    referenceMonth: string;
+    viewMonth: string;
 
     // Actions
     setContext: (context: ContextType) => void;
@@ -31,6 +32,7 @@ interface FinanceState {
     toggleWidget: (id: string) => void;
     reorderWidgets: (startIndex: number, endIndex: number) => void;
     setReferenceMonth: (month: string) => void;
+    setViewMonth: (month: string) => void;
     syncWithStorage: () => void;
 
     // ... (rest of actions)
@@ -105,6 +107,7 @@ export const useFinanceStore = create<FinanceState>()(
             },
             isLoading: false,
             referenceMonth: new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7),
+            viewMonth: new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7),
 
             setContext: (context) => set({ currentContext: context }),
 
@@ -121,6 +124,7 @@ export const useFinanceStore = create<FinanceState>()(
             },
 
             setReferenceMonth: (month) => set({ referenceMonth: month }),
+            setViewMonth: (month) => set({ viewMonth: month }),
 
             // Helper to manually trigger rehydration (sync across tabs)
             syncWithStorage: () => {
@@ -595,7 +599,8 @@ if (typeof window !== 'undefined') {
                         businessData: state.businessData,
                         settings: state.settings,
                         isLoading: state.isLoading,
-                        referenceMonth: state.referenceMonth
+                        referenceMonth: state.referenceMonth,
+                        viewMonth: state.viewMonth
                     },
                     version: 0
                 };

@@ -48,11 +48,13 @@ interface TransactionModalProps {
   forcedType?: 'income' | 'expense' | 'transfer';
   editingTransaction?: any;
   defaultAccountId?: string;
+  activeMonth?: string;
 }
 
-const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, forcedType, editingTransaction, defaultAccountId }) => {
+const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, forcedType, editingTransaction, defaultAccountId, activeMonth }) => {
   const data = useCurrentData();
   const { addTransaction, updateTransaction, addCategory, settings, referenceMonth } = useFinanceStore();
+  const effectiveMonth = activeMonth || referenceMonth;
 
   const [dateType, setDateType] = useState<'today' | 'yesterday' | 'other'>('today');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -196,7 +198,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
       const scope = forcedScope || 'all';
 
       if (editingTransaction) {
-        await updateTransaction(editingTransaction.id, finalPayload as any, scope, referenceMonth);
+        await updateTransaction(editingTransaction.id, finalPayload as any, scope, effectiveMonth);
       } else {
         await addTransaction(finalPayload as any);
       }
@@ -249,7 +251,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
                   onClick={() => finalizeSubmit(pendingSubmitData?.payload, pendingSubmitData?.stayOpen || false, 'single')}
                 >
                   <div className="opt-title">Apenas este mês</div>
-                  <div className="opt-desc">Cria uma exceção apenas para {referenceMonth}</div>
+                  <div className="opt-desc">Cria uma exceção apenas para {effectiveMonth}</div>
                 </button>
 
                 <button

@@ -38,7 +38,7 @@ const Income: React.FC = () => {
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'asc' });
 
     const data = useCurrentData();
-    const { settings, updateTransaction, deleteTransaction, referenceMonth, setReferenceMonth } = useFinanceStore();
+    const { settings, updateTransaction, deleteTransaction, viewMonth, setViewMonth } = useFinanceStore();
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: settings.currency || 'EUR' }).format(value);
@@ -62,7 +62,7 @@ const Income: React.FC = () => {
 
     const confirmDelete = (scope: 'all' | 'single') => {
         if (transactionToDelete) {
-            deleteTransaction(transactionToDelete.id, scope, referenceMonth);
+            deleteTransaction(transactionToDelete.id, scope, viewMonth);
         }
         setShowDeletePrompt(false);
         setTransactionToDelete(null);
@@ -101,10 +101,10 @@ const Income: React.FC = () => {
         if (!data?.transactions) return [];
         return data.transactions.filter(t =>
             t.type === 'income' &&
-            isTransactionInMonth(t, referenceMonth) &&
+            isTransactionInMonth(t, viewMonth) &&
             (t.description || '').toLowerCase().includes(searchTerm.toLowerCase())
         );
-    }, [data, searchTerm, referenceMonth]);
+    }, [data, searchTerm, viewMonth]);
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -153,12 +153,12 @@ const Income: React.FC = () => {
         return { pending, paid, total: pending + paid };
     }, [filteredIncome]);
 
-    const currentMonthDate = new Date(referenceMonth + '-01T12:00:00');
+    const currentMonthDate = new Date(viewMonth + '-01T12:00:00');
 
     const changeMonth = (offset: number) => {
-        const [y, m] = referenceMonth.split('-').map(Number);
+        const [y, m] = viewMonth.split('-').map(Number);
         const date = new Date(y, m - 1 + offset, 1);
-        setReferenceMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+        setViewMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
     };
 
     const prevMonth = () => changeMonth(-1);
@@ -262,7 +262,7 @@ const Income: React.FC = () => {
                                                 )}
                                                 {t.isRecurring && (
                                                     <div className="installment-badge" title="Parcelado">
-                                                        {getInstallmentInfo(t, referenceMonth)}
+                                                        {getInstallmentInfo(t, viewMonth)}
                                                     </div>
                                                 )}
                                             </div>
@@ -338,6 +338,7 @@ const Income: React.FC = () => {
                 onClose={() => { setIsModalOpen(false); setIncomeToEdit(null); }}
                 editingTransaction={incomeToEdit}
                 forcedType="income"
+                activeMonth={viewMonth}
             />
         </div>
     );

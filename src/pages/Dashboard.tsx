@@ -48,8 +48,15 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const { settings, toggleWidget, reorderWidgets, referenceMonth } = useFinanceStore();
+  const { settings, toggleWidget, reorderWidgets, referenceMonth, setReferenceMonth } = useFinanceStore();
   const data = useCurrentData();
+
+  useEffect(() => {
+    const todayMonth = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7);
+    if (referenceMonth !== todayMonth) {
+      setReferenceMonth(todayMonth);
+    }
+  }, []);
 
   if (!data) return null;
 
