@@ -337,6 +337,7 @@ const Income: React.FC = () => {
                 isOpen={isModalOpen}
                 onClose={() => { setIsModalOpen(false); setIncomeToEdit(null); }}
                 editingTransaction={incomeToEdit}
+                forcedType="income"
             />
         </div>
     );

@@ -196,14 +196,14 @@ const Transactions: React.FC = () => {
             <div className="header-left">
               <button className="category-pill-dropdown-mob">
                 <Activity size={18} className="mr-2" />
-                Despesas
+                Transações
                 <ChevronDown size={14} className="ml-2" />
               </button>
             </div>
             <div className="header-actions-mob">
               <button className="btn-nova-despesa-mob" onClick={() => setIsModalOpen(true)}>
                 <Plus size={16} className="mr-2" />
-                NOVA DESPESA
+                NOVA TRANSAÇÃO
               </button>
               <button className="header-icon-btn-mob"><Search size={18} /></button>
               <button className="header-icon-btn-mob"><Filter size={18} /></button>

@@ -337,6 +337,7 @@ const Expenses: React.FC = () => {
                 isOpen={isModalOpen}
                 onClose={() => { setIsModalOpen(false); setExpenseToEdit(null); }}
                 editingTransaction={expenseToEdit}
+                forcedType="expense"
             />
         </div>
     );
