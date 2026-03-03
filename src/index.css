@@ -1278,6 +1278,114 @@ button {
   }
 }
 
+/* Global Animation & Modal System */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.mobills-modal {
+  background: var(--bg-primary);
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: mobillsSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border-light);
+}
+
+.mobills-modal.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.mobills-modal-header {
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.btn-mobills-save {
+  padding: 12px 24px;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 13px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.btn-mobills-save.expense {
+  background: var(--mobills-red);
+  box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
+}
+
+.btn-mobills-save.income {
+  background: var(--mobills-green);
+  box-shadow: 0 4px 12px rgba(63, 185, 80, 0.3);
+}
+
+.btn-mobills-save.neutral {
+  background: #64748b;
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.2);
+}
+
+.btn-mobills-save:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.btn-text-only {
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-text-only:hover {
+  color: #64748b;
+}
+
+@keyframes mobillsSlideIn {
+  from {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
 .fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }

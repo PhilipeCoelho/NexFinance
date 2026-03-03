@@ -209,17 +209,27 @@ const Expenses: React.FC = () => {
                     </div>
 
                     {showDeletePrompt && (
-                        <div className="modal-overlay" style={{ zIndex: 11000, position: 'fixed' }} onClick={() => setShowDeletePrompt(false)}>
-                            <div className="mobills-modal glass" style={{ width: '350px', padding: '24px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-overlay" onClick={() => setShowDeletePrompt(false)}>
+                            <div className="mobills-modal glass fade-in" style={{ width: '350px', padding: '32px' }} onClick={e => e.stopPropagation()}>
                                 <div style={{ textAlign: 'center' }}>
-                                    <Trash2 size={40} color="var(--mobills-red)" style={{ margin: '0 auto 16px' }} />
-                                    <h3 style={{ fontWeight: 700, fontSize: '18px', marginBottom: '8px' }}>Excluir despesa</h3>
-                                    <p style={{ fontSize: '14px', color: '#666', marginBottom: '24px' }}>
-                                        Esta é uma despesa repetida. O que você deseja excluir?
+                                    <div style={{
+                                        background: 'rgba(248, 113, 113, 0.1)',
+                                        width: '64px', height: '64px',
+                                        borderRadius: '20px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        margin: '0 auto 20px'
+                                    }}>
+                                        <Trash2 size={32} color="var(--mobills-red)" />
+                                    </div>
+                                    <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '12px', color: 'var(--text-primary)' }}>Excluir despesa</h3>
+                                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '28px', lineHeight: '1.5' }}>
+                                        Esta é uma despesa repetida.<br />O que você deseja excluir?
                                     </p>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        <button className="btn-mobills-save expense" style={{ width: '100%' }} onClick={() => confirmDelete('single')}>Apenas este mês</button>
-                                        <button className="btn-mobills-save expense" style={{ width: '100%', background: '#666', boxShadow: 'none' }} onClick={() => confirmDelete('all')}>Todos os meses</button>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <button className="btn-mobills-save expense" style={{ width: '100%' }} onClick={() => confirmDelete('single')}>APENAS ESTE MÊS</button>
+                                        <button className="btn-mobills-save neutral" style={{ width: '100%' }} onClick={() => confirmDelete('all')}>TODOS OS MESES</button>
                                         <button className="btn-text-only" style={{ marginTop: '8px' }} onClick={() => setShowDeletePrompt(false)}>Cancelar</button>
                                     </div>
                                 </div>
@@ -355,7 +365,7 @@ const Expenses: React.FC = () => {
                         <div className="icon-bg red"><Scale size={20} /></div>
                     </div>
                 </aside>
-            </main>
+            </main >
 
             <TransactionModal
                 isOpen={isModalOpen}
@@ -364,7 +374,7 @@ const Expenses: React.FC = () => {
                 forcedType="expense"
                 activeMonth={viewMonth}
             />
-        </div>
+        </div >
     );
 };
 
