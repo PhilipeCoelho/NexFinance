@@ -41,6 +41,7 @@ interface FinanceState {
     setReferenceMonth: (month: string) => void;
     setViewMonth: (month: string) => void;
     syncWithStorage: () => void;
+    hardReset: () => void;
 
     // Auth Actions
     signIn: (email: string, pass: string) => Promise<{ error: any }>;
@@ -203,6 +204,13 @@ export const useFinanceStore = create<FinanceState>()(
             signOut: async () => {
                 await supabase.auth.signOut();
                 set({ session: null, user: null, isAuthenticated: false });
+            },
+
+            hardReset: () => {
+                if (confirm("Isto irá apagar todos os dados locais e recarregar os dados originais da produção. Continuar?")) {
+                    localStorage.removeItem('nexfinance-user-data');
+                    window.location.reload();
+                }
             },
 
             syncWithStorage: () => {

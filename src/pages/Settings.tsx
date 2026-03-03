@@ -17,7 +17,7 @@ import {
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
 
 const Settings: React.FC = () => {
-  const { settings, setCurrency, setTheme } = useFinanceStore();
+  const { settings, setCurrency, setTheme, hardReset } = useFinanceStore();
   const data = useCurrentData();
 
   const handleCurrencyChange = (currency: string) => {
@@ -109,10 +109,13 @@ const Settings: React.FC = () => {
                   </div>
                   <ChevronRight size={16} className="text-slate-300" />
                 </button>
-                <button className="flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-all">
+                <button
+                  className="flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-all w-full text-left"
+                  onClick={() => hardReset()}
+                >
                   <div className="flex items-center gap-3">
                     <Database size={18} className="text-red-400" />
-                    <span className="text-sm font-bold text-red-600">Limpar Todos os Dados</span>
+                    <span className="text-sm font-bold text-red-600">Sincronizar/Limpar Dados (Baseado na Produção)</span>
                   </div>
                   <ChevronRight size={16} className="text-red-300" />
                 </button>
