@@ -678,7 +678,10 @@ export const useCurrentData = () => {
     return currentContext === 'personal' ? personalData : businessData;
 };
 
-// Add cross-tab listener
+// Add cross-tab listener and Real-time Cloud Sync
+let isMigratingRemote = false;
+let cloudTimeout: any;
+
 if (typeof window !== 'undefined') {
     window.addEventListener('storage', (e) => {
         if (e.key === 'nexfinance-user-data') {
@@ -686,35 +689,85 @@ if (typeof window !== 'undefined') {
         }
     });
 
-    // Auto-sync to disk on every change (Dev mode only)
-    if (window.location.hostname === 'localhost') {
-        let timeout: any;
-        useFinanceStore.subscribe((state) => {
-            // Safety: Don't sync if the state is empty (prevents cleaning database.json on new browser sessions)
-            if (!state.personalData?.accounts?.length && !state.personalData?.transactions?.length) {
-                return;
-            }
+    // Cloud Sync Setup & Realtime Engine
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user) {
+            console.log("CLOUD: User authenticated, setting up real-time sync...");
 
-            if (timeout) clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                const data = {
-                    state: {
-                        currentContext: state.currentContext,
-                        personalData: state.personalData,
-                        businessData: state.businessData,
-                        settings: state.settings,
-                        isLoading: state.isLoading,
-                        referenceMonth: state.referenceMonth,
-                        viewMonth: state.viewMonth
-                    },
-                    version: 0
-                };
-                fetch('/api/save-db', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                }).catch(err => console.error("AUTO-SYNC ERROR:", err));
-            }, 2000); // 2s debounce
-        });
-    }
+            // 1. Subscribe to Cloud Changes (Phone -> PC)
+            supabase
+                .channel('schema-db-changes')
+                .on(
+                    'postgres_changes',
+                    { event: '*', schema: 'public', table: 'user_sync', filter: `user_id=eq.${session.user.id}` },
+                    (payload: any) => {
+                        console.log('CLOUD: Real-time update received from another device!', payload);
+                        if (payload.new && payload.new.state) {
+                            isMigratingRemote = true; // Block loop
+                            useFinanceStore.setState(payload.new.state);
+                            setTimeout(() => { isMigratingRemote = false }, 1000);
+                        }
+                    }
+                )
+                .subscribe();
+
+            // 2. Initial Fetch
+            const { data, error } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
+            if (data?.state && !error) {
+                console.log("CLOUD: Pulling latest backup from Supabase");
+                isMigratingRemote = true;
+                useFinanceStore.setState(data.state);
+                setTimeout(() => { isMigratingRemote = false }, 1000);
+            }
+        }
+    });
+
+    useFinanceStore.subscribe((state) => {
+        // Safety: Don't sync if the state is empty (prevents cleaning database.json on new browser sessions)
+        if (!state.personalData?.accounts?.length && !state.personalData?.transactions?.length) {
+            return;
+        }
+
+        const statePayload = {
+            currentContext: state.currentContext,
+            personalData: state.personalData,
+            businessData: state.businessData,
+            settings: state.settings,
+            isLoading: state.isLoading,
+            referenceMonth: state.referenceMonth,
+            viewMonth: state.viewMonth
+        };
+
+        // Auto-sync to disk on every change (Dev mode only)
+        if (window.location.hostname === 'localhost') {
+            if (cloudTimeout) clearTimeout(cloudTimeout);
+            // This timeout will be shared and overwritten below, so we just run the fetch synchronously for local dev caching
+            fetch('/api/save-db', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ state: statePayload, version: 0 })
+            }).catch(err => console.error("AUTO-SYNC ERROR:", err));
+        }
+
+        // Auto-sync to Supabase Realtime Table (PC -> Phone)
+        // If the state change was triggered BY Supabase (payload incoming), we don't upload it back
+        if (isMigratingRemote) return;
+
+        if (state.session?.user) {
+            if (cloudTimeout) clearTimeout(cloudTimeout);
+            cloudTimeout = setTimeout(async () => {
+                try {
+                    const { error } = await supabase.from('user_sync').upsert({
+                        user_id: state.session.user.id,
+                        state: statePayload,
+                        updated_at: new Date().toISOString()
+                    });
+                    if (error) throw error;
+                    console.log('CLOUD: ✅ State successfully synced to Supabase!');
+                } catch (e) {
+                    console.error('CLOUD: ❌ Error syncing to Supabase:', e);
+                }
+            }, 3000); // 3-second debounce before sending to cloud to save database bandwidth
+        }
+    });
 }
