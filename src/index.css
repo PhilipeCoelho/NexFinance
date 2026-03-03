@@ -1490,15 +1490,23 @@ button {
     border-right: none;
   }
 
-  .mobills-table th:not(:first-child):not(.date-col),
-  .mobills-table td:not(:first-child):not(.date-col) {
-    display: none;
-    /* Hide most columns on mobile table, except desc and date */
+  /* Hide Category, Account, Date and Actions on mobile to save space */
+  .mobills-table th:nth-child(2),
+  .mobills-table td.date-cell,
+  .mobills-table th:nth-child(4),
+  .mobills-table td:nth-child(4),
+  .mobills-table th:nth-child(5),
+  .mobills-table td.account-cell,
+  .mobills-table th:nth-child(7),
+  .mobills-table td:nth-child(7) {
+    display: none !important;
   }
 
-  /* Show value column too */
-  .mobills-table th.value-col,
-  .mobills-table td.value-col {
+  /* Ensure Description and Value are visible */
+  .mobills-table th.desc-cell,
+  .mobills-table td.desc-cell,
+  .mobills-table th.value-cell,
+  .mobills-table td.value-cell {
     display: table-cell !important;
   }
 
