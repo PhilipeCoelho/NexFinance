@@ -146,35 +146,58 @@ export const useFinanceStore = create<FinanceState>()(
             setViewMonth: (month) => set({ viewMonth: month }),
 
             // Auth Implementations
-            setSession: (session) => set({
-                session,
-                user: session?.user || null,
-                isAuthenticated: !!session,
-                authLoading: false
-            }),
+            setSession: (session) => {
+                console.log("AUTH: Session update", !!session);
+                set({
+                    session,
+                    user: session?.user || null,
+                    isAuthenticated: !!session,
+                    authLoading: false
+                });
+            },
 
             signIn: async (email, password) => {
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                if (!error && data.session) {
-                    set({
-                        session: data.session,
-                        user: data.session.user,
-                        isAuthenticated: true
-                    });
+                console.log("AUTH: Attempting Sign In...");
+                try {
+                    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                    if (error) {
+                        console.error("AUTH: Sign In Error", error);
+                        return { error };
+                    }
+                    if (data.session) {
+                        set({
+                            session: data.session,
+                            user: data.session.user,
+                            isAuthenticated: true
+                        });
+                    }
+                    return { error: null };
+                } catch (e: any) {
+                    console.error("AUTH: Critical Catch", e);
+                    return { error: e };
                 }
-                return { error };
             },
 
             signUp: async (email, password) => {
-                const { data, error } = await supabase.auth.signUp({ email, password });
-                if (!error && data.session) {
-                    set({
-                        session: data.session,
-                        user: data.session.user,
-                        isAuthenticated: true
-                    });
+                console.log("AUTH: Attempting Sign Up...");
+                try {
+                    const { data, error } = await supabase.auth.signUp({ email, password });
+                    if (error) {
+                        console.error("AUTH: Sign Up Error", error);
+                        return { error };
+                    }
+                    if (data.session) {
+                        set({
+                            session: data.session,
+                            user: data.session.user,
+                            isAuthenticated: true
+                        });
+                    }
+                    return { error: null };
+                } catch (e: any) {
+                    console.error("AUTH: Critical Catch", e);
+                    return { error: e };
                 }
-                return { error };
             },
 
             signOut: async () => {
