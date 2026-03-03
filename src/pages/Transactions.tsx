@@ -264,25 +264,25 @@ const Transactions: React.FC = () => {
             <table className="mobills-table">
               <thead>
                 <tr>
-                  <th style={{ width: '1%', cursor: 'pointer' }} onClick={() => handleSort('status')}>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>
                     SIT {getSortIcon('status')}
                   </th>
-                  <th style={{ width: '1%', cursor: 'pointer' }} onClick={() => handleSort('date')}>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('date')}>
                     DATA {getSortIcon('date')}
                   </th>
-                  <th style={{ width: 'auto', cursor: 'pointer' }} onClick={() => handleSort('description')}>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('description')}>
                     DESCRIÇÃO {getSortIcon('description')}
                   </th>
-                  <th style={{ width: '1%', cursor: 'pointer' }} onClick={() => handleSort('categoryId')}>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('categoryId')}>
                     CATEGORIA {getSortIcon('categoryId')}
                   </th>
-                  <th style={{ width: '1%', cursor: 'pointer' }} onClick={() => handleSort('accountId')}>
+                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('accountId')}>
                     CONTA {getSortIcon('accountId')}
                   </th>
-                  <th style={{ width: '1%', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('value')}>
+                  <th style={{ textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('value')}>
                     VALOR {getSortIcon('value')}
                   </th>
-                  <th style={{ width: '1%', textAlign: 'right' }}>AÇÕES</th>
+                  <th style={{ textAlign: 'right' }}>AÇÕES</th>
                 </tr>
               </thead>
               <tbody>

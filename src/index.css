@@ -758,16 +758,22 @@
   background: white;
   white-space: nowrap;
   width: 1%;
-  /* Force minimum width for most columns */
 }
 
 .mobills-table th:nth-child(3) {
-  width: auto;
-  /* Description column takes all remaining space */
+  width: 35%;
+}
+
+.mobills-table th:nth-child(4) {
+  width: 18%;
+}
+
+.mobills-table th:nth-child(5) {
+  width: 15%;
 }
 
 .mobills-table td {
-  padding: 10px 12px;
+  padding: 12px 10px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
   white-space: nowrap;
@@ -775,8 +781,6 @@
 
 .mobills-table td.desc-cell {
   white-space: normal;
-  width: auto;
-  /* Description is the only flexible column */
 }
 
 .mobills-row:hover {
