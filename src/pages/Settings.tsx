@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   Globe,
   Coins,
@@ -12,13 +12,32 @@ import {
   Settings as SettingsIcon,
   Shield,
   User,
-  Zap
+  Zap,
+  UploadCloud
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
 
 const Settings: React.FC = () => {
-  const { settings, setCurrency, setTheme, hardReset } = useFinanceStore();
+  const { settings, setCurrency, setTheme, hardReset, importVercelBackup } = useFinanceStore();
   const data = useCurrentData();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string);
+        importVercelBackup(data);
+      } catch (error) {
+        console.error(error);
+        alert('Erro ao processar o arquivo de backup.');
+      }
+    };
+    reader.readAsText(file);
+  };
 
   const handleCurrencyChange = (currency: string) => {
     setCurrency(currency);
@@ -109,6 +128,25 @@ const Settings: React.FC = () => {
                   </div>
                   <ChevronRight size={16} className="text-slate-300" />
                 </button>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept=".json"
+                  onChange={handleImportBackup}
+                />
+                <button
+                  className="flex items-center justify-between p-4 bg-teal-50 rounded-xl hover:bg-teal-100 transition-all w-full text-left"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="flex items-center gap-3">
+                    <UploadCloud size={18} className="text-teal-500" />
+                    <span className="text-sm font-bold text-teal-600">Importar Backup do Vercel (Substituir Dados)</span>
+                  </div>
+                  <ChevronRight size={16} className="text-teal-300" />
+                </button>
+
                 <button
                   className="flex items-center justify-between p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-all w-full text-left"
                   onClick={() => hardReset()}

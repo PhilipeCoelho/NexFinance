@@ -42,6 +42,7 @@ interface FinanceState {
     setViewMonth: (month: string) => void;
     syncWithStorage: () => void;
     hardReset: () => void;
+    importVercelBackup: (data: any) => void;
 
     // Auth Actions
     signIn: (email: string, pass: string) => Promise<{ error: any }>;
@@ -210,6 +211,17 @@ export const useFinanceStore = create<FinanceState>()(
                 if (confirm("Isto irá apagar todos os dados locais e recarregar os dados originais da produção. Continuar?")) {
                     localStorage.removeItem('nexfinance-user-data');
                     window.location.reload();
+                }
+            },
+
+            importVercelBackup: (data: any) => {
+                if (data.personal && data.business) {
+                    set({
+                        personalData: data.personal,
+                        businessData: data.business
+                    });
+                    alert("Dados do Vercel importados com sucesso! O sistema vai recarregar para aplicar.");
+                    setTimeout(() => window.location.reload(), 300);
                 }
             },
 
