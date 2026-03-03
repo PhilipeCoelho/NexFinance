@@ -18,10 +18,12 @@ import {
 import { useFinanceStore } from '@/hooks/use-store';
 import { ContextType } from '@/types/finance';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { PanelLeftClose, PanelLeftOpen, Menu } from 'lucide-react';
 import MonthSelector from './MonthSelector';
 
 const Sidebar: React.FC = () => {
   const { currentContext, setContext, signOut } = useFinanceStore();
+  const [isPinned, setIsPinned] = React.useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -42,7 +44,13 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${isPinned ? 'pinned' : ''}`}>
+      <div className="sidebar-toggle-btn">
+        <button onClick={() => setIsPinned(!isPinned)} title={isPinned ? "Recolher" : "Fixar Menu"}>
+          {isPinned ? <PanelLeftClose size={18} /> : <Menu size={18} />}
+        </button>
+      </div>
+
       <div className="context-switcher">
         <div className={`context-logo ${currentContext}`}>
           {currentContext === 'personal' ? <User size={20} /> : <Briefcase size={20} />}
@@ -104,82 +112,172 @@ const Sidebar: React.FC = () => {
       <style dangerouslySetInnerHTML={{
         __html: `
         .sidebar {
-          width: 220px;
+          width: 50px;
           height: 100vh;
           background-color: var(--bg-secondary);
           border-right: 1px solid var(--border);
           display: flex;
           flex-direction: column;
-          padding: var(--space-3);
+          padding: 10px;
           z-index: 100;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          overflow: hidden;
+          position: relative;
+        }
+
+        /* Hover behavior: Show icons only */
+        .sidebar:hover {
+          width: 70px;
+        }
+
+        /* Pinned behavior: Show everything */
+        .sidebar.pinned {
+          width: 220px;
+        }
+
+        .sidebar-toggle-btn {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 20px;
+        }
+
+        .sidebar-toggle-btn button {
+          background: transparent;
+          color: var(--text-secondary);
+          padding: 8px;
+          border-radius: 8px;
+          transition: 0.2s;
+        }
+
+        .sidebar-toggle-btn button:hover {
+          background: var(--bg-tertiary);
+          color: var(--accent-primary);
+        }
+
+        .sidebar.pinned .sidebar-toggle-btn {
+          justify-content: flex-end;
+          padding-right: 5px;
         }
 
         .context-switcher {
           display: flex;
           align-items: center;
           gap: var(--space-2);
-          padding: 8px;
+          padding: 6px;
           background-color: var(--bg-tertiary);
           border-radius: 10px;
           margin-bottom: var(--space-4);
           border: 1px solid var(--border-light);
-          position: relative;
+          min-width: 180px;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .sidebar:hover .context-switcher,
+        .sidebar.pinned .context-switcher {
+          opacity: 1;
+        }
+
+        .sidebar:not(.pinned):not(:hover) .context-switcher {
+           display: none;
         }
 
         .context-logo {
-          width: 28px;
-          height: 28px;
-          border-radius: 6px;
+          width: 32px;
+          height: 32px;
+          min-width: 32px;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.3s ease;
         }
 
-        .context-logo.personal { background-color: rgba(47, 129, 247, 0.15); color: var(--personal-color); }
-        .context-logo.business { background-color: rgba(242, 204, 96, 0.15); color: var(--business-color); }
+        .context-info { 
+          display: flex; 
+          flex-direction: column; 
+          flex: 1; 
+          overflow: hidden;
+          transition: opacity 0.2s;
+        }
 
-        .context-info { display: flex; flex-direction: column; flex: 1; }
+        .sidebar:not(.pinned) .context-info,
+        .sidebar:not(.pinned) .switch-dropdown {
+          display: none;
+        }
+
         .context-label { font-size: 9px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-        .context-name { font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .context-name { font-size: 11px; font-weight: 600; white-space: nowrap; }
 
         .dropdown-trigger { background: transparent; color: var(--text-secondary); padding: 2px; border-radius: 4px; }
-        .dropdown-trigger:hover { background-color: var(--border-light); color: var(--text-primary); }
-
-        .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        
+        .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 
         .nav-item {
           display: flex;
           align-items: center;
-          gap: var(--space-3);
-          padding: 8px 10px;
+          gap: 15px;
+          padding: 10px;
           color: var(--text-secondary);
           background: transparent;
-          border-radius: 6px;
-          text-align: left;
+          border-radius: 10px;
           width: 100%;
-          font-size: var(--font-size-sm);
+          min-width: 200px;
           transition: all 0.2s;
+          position: relative;
+        }
+
+        .nav-item svg {
+          min-width: 20px;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .sidebar:hover .nav-item svg,
+        .sidebar.pinned .nav-item svg {
+          opacity: 1;
+        }
+
+        .nav-item span {
+          white-space: nowrap;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .sidebar.pinned .nav-item span {
+          opacity: 1;
         }
 
         .nav-item:hover { background-color: var(--bg-tertiary); color: var(--text-primary); }
-
         .nav-item.active {
           background-color: var(--bg-tertiary);
           color: var(--accent-primary);
-          border: 1px solid var(--border-light);
-          font-weight: 500;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
         .sidebar-footer {
           margin-top: auto;
-          display: flex; flex-direction: column; gap: var(--space-4);
-          padding-top: var(--space-4); border-top: 1px solid var(--border-light);
+          display: flex; flex-direction: column; gap: 4px;
+          padding-top: 15px; border-top: 1px solid var(--border-light);
         }
 
-        .sidebar-brand { display: flex; flex-direction: column; padding: 0 var(--space-3); }
-        .brand-name { font-weight: 700; font-size: var(--font-size-base); background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .brand-version { font-size: 10px; color: var(--text-secondary); opacity: 0.6; }
+        .sidebar-brand { 
+          display: flex; 
+          flex-direction: column; 
+          padding: 10px;
+          opacity: 0;
+          transition: opacity 0.2s;
+        }
+
+        .sidebar.pinned .sidebar-brand {
+          opacity: 1;
+        }
+
+        .brand-name { font-weight: 800; font-size: 16px; color: var(--accent-primary); }
+        .brand-version { font-size: 10px; color: var(--text-secondary); }
+
+        @media (max-width: 768px) {
+          .sidebar { display: none !important; }
+        }
       `}} />
     </div >
   );
