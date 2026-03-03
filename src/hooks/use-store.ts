@@ -277,6 +277,7 @@ export const useFinanceStore = create<FinanceState>()(
                         ...oldTransaction,
                         ...updated,
                         id: newSingleId,
+                        parentTransactionId: id, // Link back to the parent
                         date: `${refMonth}-${oldTransaction.date.split('-')[2] || '01'}`, // Preserve the original day
                         isFixed: false,
                         isRecurring: false,
@@ -396,40 +397,46 @@ export const useFinanceStore = create<FinanceState>()(
                     };
                 }
 
-                // DEFAULT 'ALL' DELETE
+                // DEFAULT 'ALL' DELETE (Parent + all standalone instances)
+                const idsToDelete = [id, ...data.transactions.filter(t => t.parentTransactionId === id).map(t => t.id)];
+                const transactionsToDelete = data.transactions.filter(t => idsToDelete.includes(t.id));
+
                 let updatedAccounts = [...data.accounts];
                 let updatedCards = [...data.creditCards];
                 let updatedInvoices = [...data.invoices];
 
-                if (tToDelete.status === 'confirmed') {
-                    if (tToDelete.type === 'transfer') {
-                        updatedAccounts = updatedAccounts.map(acc => {
-                            if (acc.id === tToDelete.accountId) return { ...acc, currentBalance: acc.currentBalance + Number(tToDelete.value) };
-                            if (acc.id === tToDelete.toAccountId) return { ...acc, currentBalance: acc.currentBalance - Number(tToDelete.value) };
-                            return acc;
-                        });
-                    } else if (tToDelete.accountId) {
-                        updatedAccounts = updatedAccounts.map(acc => {
-                            if (acc.id === tToDelete.accountId) return { ...acc, currentBalance: acc.currentBalance + (Number(tToDelete.value) * (tToDelete.type === 'income' ? -1 : 1)) };
-                            return acc;
-                        });
-                    } else if (tToDelete.creditCardId) {
-                        const monthStr = tToDelete.date.slice(0, 7);
-                        updatedCards = updatedCards.map(card => {
-                            if (card.id === tToDelete.creditCardId) return { ...card, limitAvailable: card.limitAvailable + Number(tToDelete.value) };
-                            return card;
-                        });
-                        updatedInvoices = updatedInvoices.map(inv => {
-                            if (inv.creditCardId === tToDelete.creditCardId && inv.month === monthStr) return { ...inv, totalValue: Math.max(0, inv.totalValue - Number(tToDelete.value)) };
-                            return inv;
-                        });
+                // Revert impact for each transaction being deleted
+                transactionsToDelete.forEach(t => {
+                    if (t.status === 'confirmed') {
+                        if (t.type === 'transfer') {
+                            updatedAccounts = updatedAccounts.map(acc => {
+                                if (acc.id === t.accountId) return { ...acc, currentBalance: acc.currentBalance + Number(t.value) };
+                                if (acc.id === t.toAccountId) return { ...acc, currentBalance: acc.currentBalance - Number(t.value) };
+                                return acc;
+                            });
+                        } else if (t.accountId) {
+                            updatedAccounts = updatedAccounts.map(acc => {
+                                if (acc.id === t.accountId) return { ...acc, currentBalance: acc.currentBalance + (Number(t.value) * (t.type === 'income' ? -1 : 1)) };
+                                return acc;
+                            });
+                        } else if (t.creditCardId) {
+                            const monthStr = t.date.slice(0, 7);
+                            updatedCards = updatedCards.map(card => {
+                                if (card.id === t.creditCardId) return { ...card, limitAvailable: card.limitAvailable + Number(t.value) };
+                                return card;
+                            });
+                            updatedInvoices = updatedInvoices.map(inv => {
+                                if (inv.creditCardId === t.creditCardId && inv.month === monthStr) return { ...inv, totalValue: Math.max(0, inv.totalValue - Number(t.value)) };
+                                return inv;
+                            });
+                        }
                     }
-                }
+                });
 
                 return {
                     [key]: {
                         ...data,
-                        transactions: data.transactions.filter(t => t.id !== id),
+                        transactions: data.transactions.filter(t => !idsToDelete.includes(t.id)),
                         accounts: updatedAccounts,
                         creditCards: updatedCards,
                         invoices: updatedInvoices

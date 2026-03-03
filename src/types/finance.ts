@@ -94,6 +94,7 @@ export interface Transaction {
         frequency: 'weekly' | 'monthly' | 'yearly';
         excludedDates?: string[]; // Format YYYY-MM
     };
+    parentTransactionId?: string;
     attachmentUrl?: string;
     createdAt: string;
 }
