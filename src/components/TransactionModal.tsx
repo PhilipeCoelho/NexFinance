@@ -486,7 +486,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
         .modal-title { font-weight: 700; color: #333; font-size: 16px; }
         .close-x { color: #999; cursor: pointer; background: transparent; }
 
-        .mobills-form { display: flex; flex-direction: column; }
+        .mobills-form { 
+          display: flex; 
+          flex-direction: column; 
+          flex: 1; 
+          min-height: 0; /* Critical for inner scrolling */
+        }
         .mobills-hero { padding: 32px 20px; text-align: center; }
         .value-container { display: flex; align-items: center; justify-content: center; gap: 8px; }
         .currency { font-size: 24px; font-weight: 700; }
