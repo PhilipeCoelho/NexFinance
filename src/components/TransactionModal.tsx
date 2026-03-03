@@ -63,6 +63,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
   const [pendingSubmitData, setPendingSubmitData] = useState<{ payload: any, stayOpen: boolean } | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [recurrenceMode, setRecurrenceMode] = useState<'single' | 'fixed' | 'installments'>('single');
+  const [displayValue, setDisplayValue] = useState("0,00");
 
   const initialValues = useMemo(() => {
     try {
@@ -123,6 +124,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
       } else {
         setDateType('today');
       }
+
+      // Format initial display value
+      const initialVal = editingTransaction ? Number(editingTransaction.value) : 0;
+      setDisplayValue(new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(initialVal));
     }
   }, [isOpen, editingTransaction, reset, initialValues]);
 
@@ -156,17 +161,28 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
 
   const currencyPrefix = settings.currency === 'BRL' ? 'R$' : settings.currency === 'EUR' ? '€' : '$';
 
-  const parseCurrencyValue = (input: string | number) => {
-    if (typeof input === 'number') return input;
-    let str = String(input).replace(/[^\d.,]/g, '');
-    if (str.includes(',') && str.includes('.')) return parseFloat(str.replace(/\./g, '').replace(',', '.'));
-    if (str.includes(',')) return parseFloat(str.replace(',', '.'));
-    return parseFloat(str) || 0;
+  const handleValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // 1. Get digits only
+    const digits = e.target.value.replace(/\D/g, "");
+
+    // 2. Parse as integer (total cents)
+    const totalCents = parseInt(digits || "0", 10);
+    const numericValue = totalCents / 100;
+
+    // 3. Format as pt-BR currency (0,00)
+    const formatted = new Intl.NumberFormat('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(numericValue);
+
+    // 4. Update both form state and display state
+    setDisplayValue(formatted);
+    setValue('value', numericValue);
   };
 
   const finalizeSubmit = async (payload: any, stayOpen: boolean, forcedScope?: 'all' | 'single') => {
     try {
-      const numericValue = parseCurrencyValue(payload.value);
+      const numericValue = Number(payload.value) || 0;
 
       // Structure the data as expected by the Transaction interface
       const finalPayload: any = {
@@ -278,10 +294,12 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
               <span className={`currency ${transactionType}`}>{currencyPrefix}</span>
               <input
                 type="text"
-                {...register('value', { required: true })}
+                inputMode="numeric"
+                value={displayValue}
+                onChange={handleValueChange}
                 className={`value-input ${transactionType}`}
-                placeholder="0,00"
                 autoFocus
+                autoComplete="off"
               />
             </div>
           </div>
