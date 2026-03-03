@@ -164,6 +164,17 @@ const Expenses: React.FC = () => {
     const prevMonth = () => changeMonth(-1);
     const nextMonth = () => changeMonth(1);
 
+    const getAdjustedDate = (dateStr: string, monthStr: string) => {
+        try {
+            const [y, m, d] = dateStr.split('-');
+            const [refY, refM] = monthStr.split('-');
+            if (dateStr.startsWith(monthStr)) return dateStr;
+            return `${refY}-${refM}-${d}`;
+        } catch (e) {
+            return dateStr;
+        }
+    };
+
     if (!data) return null;
 
     return (
@@ -267,7 +278,9 @@ const Expenses: React.FC = () => {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="date-cell">{format(new Date(t.date + 'T12:00:00'), 'dd/MM/yyyy')}</td>
+                                        <td className="date-cell">
+                                            {format(new Date(getAdjustedDate(t.date, viewMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
+                                        </td>
                                         <td className="desc-cell">
                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                 <span className="desc-text">{t.description}</span>
@@ -286,7 +299,18 @@ const Expenses: React.FC = () => {
                                         </td>
                                         <td>
                                             <div className="actions-cell">
-                                                <button onClick={() => updateTransaction(t.id, { status: t.status === 'confirmed' ? 'forecast' : 'confirmed' })} title="Confirmar">
+                                                <button
+                                                    onClick={() => {
+                                                        const isRecurring = t.isFixed || t.isRecurring;
+                                                        updateTransaction(
+                                                            t.id,
+                                                            { status: t.status === 'confirmed' ? 'forecast' : 'confirmed' },
+                                                            isRecurring ? 'single' : 'all',
+                                                            viewMonth
+                                                        );
+                                                    }}
+                                                    title="Confirmar"
+                                                >
                                                     <Check size={16} color={t.status === 'confirmed' ? 'var(--mobills-green)' : '#cbd5e1'} />
                                                 </button>
                                                 <button onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored })} title={t.isIgnored ? "Considerar" : "Ignorar"}>

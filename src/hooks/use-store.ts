@@ -277,7 +277,7 @@ export const useFinanceStore = create<FinanceState>()(
                         ...oldTransaction,
                         ...updated,
                         id: newSingleId,
-                        date: `${refMonth}-10`, // Preserve the month
+                        date: `${refMonth}-${oldTransaction.date.split('-')[2] || '01'}`, // Preserve the original day
                         isFixed: false,
                         isRecurring: false,
                         recurrence: undefined,
