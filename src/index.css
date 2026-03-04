@@ -1490,24 +1490,53 @@ button {
     border-right: none;
   }
 
-  /* Hide Category, Account, Date and Actions on mobile to save space */
+  /* Hide Category, Account, and Date on mobile to save space */
   .mobills-table th:nth-child(2),
   .mobills-table td.date-cell,
   .mobills-table th:nth-child(4),
   .mobills-table td:nth-child(4),
   .mobills-table th:nth-child(5),
-  .mobills-table td.account-cell,
-  .mobills-table th:nth-child(7),
-  .mobills-table td:nth-child(7) {
+  .mobills-table td.account-cell {
     display: none !important;
   }
 
-  /* Ensure Description and Value are visible */
+  /* Ensure Description, Value and Actions are visible */
   .mobills-table th.desc-cell,
   .mobills-table td.desc-cell,
   .mobills-table th.value-cell,
-  .mobills-table td.value-cell {
+  .mobills-table td.value-cell,
+  .mobills-table th:nth-child(7),
+  .mobills-table td:nth-child(7) {
     display: table-cell !important;
+  }
+
+  /* Make actions compact and grid-based on mobile */
+  .mobills-table th:nth-child(7),
+  .mobills-table td:nth-child(7) {
+    padding-left: 0;
+    padding-right: 8px;
+    width: 65px;
+  }
+
+  .actions-cell {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 0;
+    justify-content: center;
+    background: transparent !important;
+  }
+
+  .actions-cell button {
+    padding: 6px;
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-light) !important;
+    border-radius: 8px;
+  }
+
+  .actions-cell button svg {
+    width: 14px;
+    height: 14px;
   }
 
   /* Modal iPhone Optimization */
