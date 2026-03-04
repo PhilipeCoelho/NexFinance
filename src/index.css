@@ -1407,22 +1407,39 @@ button {
     /* Reduce padding on mobile */
   }
 
+  body,
+  html {
+    overflow: auto !important;
+    height: auto !important;
+    position: relative;
+  }
+
+  #root {
+    height: auto !important;
+    min-height: 100vh;
+    display: block;
+  }
+
   .sidebar {
     display: none !important;
   }
 
   .app-container {
     flex-direction: column;
-    height: 100vh;
-    height: -webkit-fill-available;
+    min-height: 100vh;
+    height: auto;
   }
 
   .main-content {
     padding-bottom: calc(70px + env(safe-area-inset-bottom, 20px));
+    overflow: visible;
+    height: auto;
   }
 
   .scroll-area {
     padding: 12px;
+    overflow-y: visible;
+    height: auto;
   }
 
   /* Bottom Navigation */
