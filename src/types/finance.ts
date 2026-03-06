@@ -131,3 +131,25 @@ export interface FinanceContextData {
     projects: Project[];
     costCenters: CostCenter[];
 }
+
+export interface LedgerEntry {
+    id: string;
+    transactionId: string;
+    accountId: string;
+    date: string;
+    type: 'income' | 'expense' | 'transfer_in' | 'transfer_out';
+    value: number;
+    balanceAfter: number;
+    description: string;
+    timestamp: string; // ISO string 
+}
+
+export interface CashflowTimelineEntry {
+    date: string;
+    transactionId: string;
+    description: string;
+    type: 'income' | 'expense' | 'transfer';
+    value: number;
+    balanceAfter: number;
+    status: TransactionStatus;
+}
