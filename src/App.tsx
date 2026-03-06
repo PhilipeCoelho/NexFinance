@@ -10,7 +10,6 @@ import Goals from '@/pages/Goals';
 import Planning from '@/pages/Planning';
 import Categories from '@/pages/Categories';
 import Settings from '@/pages/Settings';
-import AdvancedPlanning from '@/pages/AdvancedPlanning';
 import Migration from '@/pages/Migration';
 import Login from '@/pages/Login';
 import MobileNav from '@/components/MobileNav';
@@ -78,7 +77,6 @@ const App: React.FC = () => {
                             <Route path="/cards" element={<Cards />} />
                             <Route path="/goals" element={<Goals />} />
                             <Route path="/planning" element={<Planning />} />
-                            <Route path="/advanced" element={<AdvancedPlanning />} />
                             <Route path="/categories" element={<Categories />} />
                             <Route path="/settings" element={<Settings />} />
                             <Route path="/migration" element={<Migration />} />

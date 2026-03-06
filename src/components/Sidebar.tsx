@@ -13,8 +13,7 @@ import {
   Briefcase,
   User,
   CreditCard,
-  LogOut,
-  Activity
+  LogOut
 } from 'lucide-react';
 import { useFinanceStore } from '@/hooks/use-store';
 import { ContextType } from '@/types/finance';
@@ -37,7 +36,6 @@ const Sidebar: React.FC = () => {
     { icon: CreditCard, label: 'Cartões', id: 'cards', path: '/cards' },
     { icon: Target, label: 'Objetivos', id: 'goals', path: '/goals' },
     { icon: PieChart, label: 'Planejamento', id: 'planning', path: '/planning' },
-    { icon: Activity, label: 'Estratégia Avançada', id: 'advanced', path: '/advanced' },
     { icon: Tags, label: 'Categorias & Tags', id: 'categories', path: '/categories' },
   ];
 
