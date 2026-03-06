@@ -142,9 +142,7 @@ export class FinancialEngine {
         let rebuiltCards = creditCards.map(card => ({ ...card, limitAvailable: card.limitTotal || 0 }));
         let rebuiltInvoices = invoices.map(inv => ({ ...inv, totalValue: 0 }));
 
-        // Filtra apenas transações efetivamente confirmadas
         const confirmedTransactions = transactions.filter(t => t.status === 'confirmed');
-        // Para garantia lógica, aplicamos em ordem de data
         confirmedTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         for (const t of confirmedTransactions) {
@@ -155,5 +153,70 @@ export class FinancialEngine {
         }
 
         return { rebuiltAccounts, rebuiltCards, rebuiltInvoices };
+    }
+
+    /**
+     * Verifica se uma transação (normal, fixa ou recorrente) está ativa em um mês específico.
+     */
+    static isTransactionInMonth(t: Transaction, monthStr: string): boolean {
+        if (!t?.date || !monthStr) return false;
+        const [refYear, refMonth] = monthStr.split('-').map(Number);
+
+        const parts = t.date.split('-');
+        const tYear = parseInt(parts[0]);
+        const tMonth = parseInt(parts[1]);
+
+        const diffMonths = (refYear - tYear) * 12 + (refMonth - tMonth) + 1;
+
+        if (diffMonths <= 0) return t.date.startsWith(monthStr);
+        if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
+        if (t.isFixed) return true;
+        if (!t.isRecurring) return t.date.startsWith(monthStr);
+
+        if (t.recurrence?.installmentsCount) {
+            return diffMonths <= t.recurrence.installmentsCount;
+        }
+
+        return true;
+    }
+
+    /**
+     * Calcula o saldo inicial projetado para um mês específico, 
+     * carregando saldos de meses anteriores (continuidade financeira).
+     */
+    static calculateProjectedInitialBalance(
+        transactions: Transaction[],
+        accounts: Account[],
+        targetMonth: string
+    ): number {
+        const currentRealLiquidity = this.calculateRealLiquidity(accounts);
+        const todayMonth = new Date().toISOString().slice(0, 7);
+
+        if (targetMonth <= todayMonth) {
+            return currentRealLiquidity;
+        }
+
+        let accumulatedProjection = 0;
+        let currentIterMonth = todayMonth;
+
+        while (currentIterMonth < targetMonth) {
+            const monthlyTxs = transactions.filter(t => this.isTransactionInMonth(t, currentIterMonth));
+
+            const monthlyPendingIncome = monthlyTxs
+                .filter(t => t.type === 'income' && !t.isIgnored && this.getEffectiveTransactionStatus(t, currentIterMonth) === 'forecast')
+                .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+
+            const monthlyPendingExpense = monthlyTxs
+                .filter(t => t.type === 'expense' && !t.isIgnored && this.getEffectiveTransactionStatus(t, currentIterMonth) === 'forecast')
+                .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+
+            accumulatedProjection += (monthlyPendingIncome - monthlyPendingExpense);
+
+            const [y, m] = currentIterMonth.split('-').map(Number);
+            const nextDate = new Date(y, m, 1);
+            currentIterMonth = nextDate.toISOString().slice(0, 7);
+        }
+
+        return currentRealLiquidity + accumulatedProjection;
     }
 }

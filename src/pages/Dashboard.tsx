@@ -65,47 +65,18 @@ const Dashboard: React.FC = () => {
     ? settings.dashboardWidgets
     : DEFAULT_WIDGETS;
 
-  // Filter transactions for the selected month (including recurring and fixed ones)
-  const isTransactionInMonth = (t: any, monthStr: string) => {
-    if (!t?.date || !monthStr) return false;
-    const [refYear, refMonth] = monthStr.split('-').map(Number);
-    const tDate = new Date(t.date);
-    if (isNaN(tDate.getTime())) return t.date.startsWith(monthStr);
-
-    const tYear = tDate.getFullYear();
-    const tMonth = tDate.getMonth() + 1;
-
-    // Calculate difference in months (1-indexed)
-    const diffMonths = (refYear - tYear) * 12 + (refMonth - tMonth) + 1;
-
-    // If reference month is before the start date, don't show
-    if (diffMonths <= 0) return t.date.startsWith(monthStr);
-
-    // Check if this specific month was excluded (e.g., edited specifically)
-    if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
-
-    // Fixed transactions repeat every month indefinitely
-    if (t.isFixed) return true;
-
-    // If it's a normal transaction and it's not the same month, don't show
-    if (!t.isRecurring) return t.date.startsWith(monthStr);
-
-    // If it's recurring, check if it's within the installment limit
-    if (t.recurrence?.installmentsCount) {
-      return diffMonths <= t.recurrence.installmentsCount;
-    }
-
-    // Default recurring (recurrent without end)
-    return true;
-  };
-
   const monthlyTransactions = useMemo(() => {
     if (!data?.transactions) return [];
-    return data.transactions.filter(t => isTransactionInMonth(t, referenceMonth));
+    return data.transactions.filter(t => FinancialEngine.isTransactionInMonth(t, referenceMonth));
   }, [data?.transactions, referenceMonth]);
 
-  // Liquidez Real = saldo das contas ativas que foram confirmadas
-  const liquidBalance = useMemo(() => FinancialEngine.calculateRealLiquidity(data?.accounts || []), [data?.accounts]);
+  // Liquidez Inicial Projetada (Carregando saldos de meses anteriores)
+  const projectedInitialBalance = useMemo(() => {
+    return FinancialEngine.calculateProjectedInitialBalance(data?.transactions || [], data?.accounts || [], referenceMonth);
+  }, [data?.transactions, data?.accounts, referenceMonth]);
+
+  // Liquidez Real (Hoje)
+  const realCurrentLiquidity = useMemo(() => FinancialEngine.calculateRealLiquidity(data?.accounts || []), [data?.accounts]);
 
   // Para transações recorrentes/fixas em meses futuros, o status é sempre 'forecast'
   const getEffectiveStatus = (t: any): string => {
@@ -127,6 +98,10 @@ const Dashboard: React.FC = () => {
   const pendingExpense = monthlyTransactions
     .filter(t => t.type === 'expense' && !t.isIgnored && getEffectiveStatus(t) !== 'confirmed')
     .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+
+  const projectedEndBalance = useMemo(() => {
+    return projectedInitialBalance + pendingIncome - pendingExpense;
+  }, [projectedInitialBalance, pendingIncome, pendingExpense]);
 
   const formatCurrency = (value: number) => {
     try {
@@ -152,14 +127,14 @@ const Dashboard: React.FC = () => {
         <div className="widget-header">
           <div className="widget-icon-bg warning"><Calendar size={18} /></div>
           <div className="widget-title-group">
-            <span className="widget-tag">Projeção</span>
-            <h3 className="widget-label">Fluxo 30 Dias</h3>
+            <span className="widget-tag">Fim do Mês</span>
+            <h3 className="widget-label">Saldo Final Projetado</h3>
           </div>
           <ArrowUpRight size={14} className="text-secondary" />
         </div>
         <div className="widget-body">
-          <span className="widget-value warning">{formatCurrency(liquidBalance + pendingIncome - pendingExpense)}</span>
-          <p className="widget-footer-text">Saldo atual + previsões pendentes do mês</p>
+          <span className="widget-value warning">{formatCurrency(projectedEndBalance)}</span>
+          <p className="widget-footer-text">Resultado contínuo acumulado até {format(new Date(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}</p>
         </div>
       </div>
     ),
@@ -472,8 +447,8 @@ const Dashboard: React.FC = () => {
         <div className="premium-kpi highlight" onClick={() => navigate('/accounts')} style={{ cursor: 'pointer' }}>
           <div className="icon-box"><Wallet size={20} /></div>
           <div className="info">
-            <span className="lbl">Liquidez Real</span>
-            <span className="val">{formatCurrency(liquidBalance)}</span>
+            <span className="lbl">{referenceMonth > new Date().toISOString().slice(0, 7) ? 'Liquidez Inicial' : 'Liquidez Real'}</span>
+            <span className="val">{formatCurrency(projectedInitialBalance)}</span>
           </div>
         </div>
 
