@@ -18,7 +18,7 @@ import {
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
 
 const Settings: React.FC = () => {
-  const { settings, setCurrency, setTheme, hardReset, importVercelBackup } = useFinanceStore();
+  const { settings, setCurrency, setTheme, hardReset, importVercelBackup, recalculateBalances } = useFinanceStore();
   const data = useCurrentData();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -145,6 +145,20 @@ const Settings: React.FC = () => {
                     <span className="text-sm font-bold text-teal-600">Importar Backup do Vercel (Substituir Dados)</span>
                   </div>
                   <ChevronRight size={16} className="text-teal-300" />
+                </button>
+
+                <button
+                  className="flex items-center justify-between p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-all w-full text-left"
+                  onClick={() => {
+                    recalculateBalances();
+                    alert("Auditoria completa: Todos os saldos de contas foram matematicamente reconstruídos!");
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <Database size={18} className="text-purple-500" />
+                    <span className="text-sm font-bold text-purple-600">Reconstruir Saldos (Auditoria Matemática)</span>
+                  </div>
+                  <ChevronRight size={16} className="text-purple-300" />
                 </button>
 
                 <button
