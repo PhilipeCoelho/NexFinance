@@ -27,9 +27,14 @@ const App: React.FC = () => {
 
     useEffect(() => {
         // Initial session check
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-        });
+        supabase.auth.getSession()
+            .then(({ data: { session } }) => {
+                setSession(session);
+            })
+            .catch((error) => {
+                console.error("Erro ao obter a sessão do Supabase:", error);
+                setSession(null); // Desbloqueia a tela de loading em caso de erro
+            });
 
         // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
