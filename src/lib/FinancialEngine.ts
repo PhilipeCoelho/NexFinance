@@ -190,7 +190,7 @@ export class FinancialEngine {
         targetMonth: string
     ): number {
         const currentRealLiquidity = this.calculateRealLiquidity(accounts);
-        const todayMonth = new Date().toISOString().slice(0, 7);
+        const todayMonth = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7);
 
         if (targetMonth <= todayMonth) {
             return currentRealLiquidity;
@@ -212,9 +212,13 @@ export class FinancialEngine {
 
             accumulatedProjection += (monthlyPendingIncome - monthlyPendingExpense);
 
-            const [y, m] = currentIterMonth.split('-').map(Number);
-            const nextDate = new Date(y, m, 1);
-            currentIterMonth = nextDate.toISOString().slice(0, 7);
+            let [y, m] = currentIterMonth.split('-').map(Number);
+            m += 1;
+            if (m > 12) {
+                m = 1;
+                y += 1;
+            }
+            currentIterMonth = `${y}-${m.toString().padStart(2, '0')}`;
         }
 
         return currentRealLiquidity + accumulatedProjection;
