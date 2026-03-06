@@ -95,6 +95,7 @@ export interface Transaction {
         excludedDates?: string[]; // Format YYYY-MM
     };
     parentTransactionId?: string;
+    occurrenceDate?: string; // New: Specific occurrence indicator
     attachmentUrl?: string;
     createdAt: string;
 }

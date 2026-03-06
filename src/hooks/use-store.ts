@@ -302,6 +302,9 @@ export const useFinanceStore = create<FinanceState>()(
                 // RECURRENCE HANDLING
                 // If it's a recurring transaction and we are editing only one month
                 if (scope === 'single' && refMonth && (oldTransaction.isFixed || oldTransaction.isRecurring)) {
+                    const occurrenceDay = oldTransaction.date.split('-')[2] || '01';
+                    const specificDate = `${refMonth}-${occurrenceDay}`;
+
                     const updatedRecurrence = {
                         ...oldTransaction.recurrence,
                         excludedDates: [...(oldTransaction.recurrence?.excludedDates || []), refMonth]
@@ -313,7 +316,8 @@ export const useFinanceStore = create<FinanceState>()(
                         ...updated,
                         id: newSingleId,
                         parentTransactionId: id,
-                        date: `${refMonth}-${oldTransaction.date.split('-')[2] || '01'}`,
+                        date: specificDate,
+                        occurrenceDate: specificDate, // Tracking specific occurrence
                         isFixed: false,
                         isRecurring: false,
                         recurrence: undefined,
@@ -344,6 +348,14 @@ export const useFinanceStore = create<FinanceState>()(
                 }
 
                 // DEFAULT 'ALL' UPDATE
+                // Safety: If updating all occurrences of a recurring transaction, 
+                // DO NOT propagate the 'confirmed' status to the template itself 
+                // unless it's a non-recurring transaction.
+                let filteredUpdate = { ...updated };
+                if ((oldTransaction.isFixed || oldTransaction.isRecurring) && updated.status === 'confirmed') {
+                    delete filteredUpdate.status;
+                }
+
                 const { updatedAccounts: acc1, updatedCards: cards1, updatedInvoices: inv1 } = FinancialEngine.revertTransactionImpact(
                     oldTransaction,
                     data.accounts,
@@ -351,7 +363,7 @@ export const useFinanceStore = create<FinanceState>()(
                     data.invoices
                 );
 
-                const newTransaction = { ...oldTransaction, ...updated } as Transaction;
+                const newTransaction = { ...oldTransaction, ...filteredUpdate } as Transaction;
                 const { updatedAccounts: finalAcc, updatedCards: finalCards, updatedInvoices: finalInv } = FinancialEngine.applyTransactionImpact(
                     newTransaction,
                     acc1,
@@ -378,16 +390,22 @@ export const useFinanceStore = create<FinanceState>()(
 
                 // RECURRENCE HANDLING
                 if (scope === 'single' && refMonth && (tToDelete.isFixed || tToDelete.isRecurring)) {
-                    const updatedRecurrence = {
-                        ...tToDelete.recurrence,
-                        excludedDates: [...(tToDelete.recurrence?.excludedDates || []), refMonth]
-                    };
-                    return {
-                        [key]: {
-                            ...data,
-                            transactions: data.transactions.map(t => t.id === id ? { ...t, recurrence: updatedRecurrence } : t)
-                        }
-                    };
+                    // Check if it's already a standalone occurrence
+                    if (tToDelete.occurrenceDate === `${refMonth}-${tToDelete.date.split('-')[2] || '01'}`) {
+                        // If it's the actual spawned transaction, just delete it normally (rest of function handles it)
+                    } else {
+                        // If it's a virtual occurrence of the parent, exclude the date
+                        const updatedRecurrence = {
+                            ...tToDelete.recurrence,
+                            excludedDates: [...(tToDelete.recurrence?.excludedDates || []), refMonth]
+                        };
+                        return {
+                            [key]: {
+                                ...data,
+                                transactions: data.transactions.map(t => t.id === id ? { ...t, recurrence: updatedRecurrence } : t)
+                            }
+                        };
+                    }
                 }
 
                 // DEFAULT 'ALL' DELETE (Parent + all standalone instances)
