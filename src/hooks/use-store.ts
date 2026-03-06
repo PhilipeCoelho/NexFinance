@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ContextType, FinanceContextData, Transaction, Account, Category, Invoice, CreditCard } from '@/types/finance';
-import database from '@/data/database.json';
+import { FinancialEngine } from '@/lib/FinancialEngine';
 import { supabase } from '@/services/supabase';
 
 interface DashboardWidget {
@@ -71,6 +71,7 @@ interface FinanceState {
     addCategory: (category: Omit<Category, 'id'>) => void;
     updateCategory: (id: string, category: Partial<Category>) => void;
     deleteCategory: (id: string) => void;
+    recalculateBalances: () => void;
 }
 
 const emptyContext = (): FinanceContextData => ({
@@ -112,9 +113,9 @@ export const useFinanceStore = create<FinanceState>()(
     persist(
         (set) => ({
             currentContext: 'personal',
-            personalData: (database as any).state?.personalData || emptyContext(),
-            businessData: (database as any).state?.businessData || emptyContext(),
-            settings: (database as any).state?.settings || {
+            personalData: emptyContext(),
+            businessData: emptyContext(),
+            settings: {
                 currency: 'EUR',
                 language: 'pt-PT',
                 theme: 'light',
@@ -274,82 +275,20 @@ export const useFinanceStore = create<FinanceState>()(
                     createdAt: ptDateString,
                 } as Transaction;
 
-                let updatedAccounts = [...data.accounts];
-                let updatedCards = [...data.creditCards];
-
-                if (transaction.status === 'confirmed') {
-                    if (transaction.type === 'transfer') {
-                        updatedAccounts = data.accounts.map(acc => {
-                            if (acc.id === transaction.accountId) {
-                                return { ...acc, currentBalance: acc.currentBalance - Number(transaction.value) };
-                            }
-                            if (acc.id === transaction.toAccountId) {
-                                return { ...acc, currentBalance: acc.currentBalance + Number(transaction.value) };
-                            }
-                            return acc;
-                        });
-                    } else if (transaction.accountId) {
-                        updatedAccounts = data.accounts.map(acc => {
-                            if (acc.id === transaction.accountId) {
-                                const modifier = transaction.type === 'income' ? 1 : -1;
-                                return { ...acc, currentBalance: acc.currentBalance + (Number(transaction.value) * modifier) };
-                            }
-                            return acc;
-                        });
-                    } else if (transaction.creditCardId) {
-                        const monthStr = transaction.date.slice(0, 7);
-                        updatedCards = data.creditCards.map(card => {
-                            if (card.id === transaction.creditCardId) {
-                                return { ...card, limitAvailable: card.limitAvailable - Number(transaction.value) };
-                            }
-                            return card;
-                        });
-
-                        // Update or create invoice for the card/month
-                        const existingInvoiceIdx = data.invoices.findIndex(inv => inv.creditCardId === transaction.creditCardId && inv.month === monthStr);
-                        if (existingInvoiceIdx >= 0) {
-                            const updatedInvoices = [...data.invoices];
-                            updatedInvoices[existingInvoiceIdx] = {
-                                ...updatedInvoices[existingInvoiceIdx],
-                                totalValue: updatedInvoices[existingInvoiceIdx].totalValue + Number(transaction.value)
-                            };
-                            return {
-                                [key]: {
-                                    ...data,
-                                    transactions: [newTransaction, ...data.transactions],
-                                    accounts: updatedAccounts,
-                                    creditCards: updatedCards,
-                                    invoices: updatedInvoices
-                                }
-                            };
-                        } else {
-                            const newInvoice: Invoice = {
-                                id: Math.random().toString(36).substr(2, 9),
-                                creditCardId: transaction.creditCardId,
-                                month: monthStr,
-                                status: 'open',
-                                totalValue: Number(transaction.value),
-                                dueDate: `${monthStr}-10`, // Default
-                            };
-                            return {
-                                [key]: {
-                                    ...data,
-                                    transactions: [newTransaction, ...data.transactions],
-                                    accounts: updatedAccounts,
-                                    creditCards: updatedCards,
-                                    invoices: [...data.invoices, newInvoice]
-                                }
-                            };
-                        }
-                    }
-                }
+                const { updatedAccounts, updatedCards, updatedInvoices } = FinancialEngine.applyTransactionImpact(
+                    newTransaction,
+                    data.accounts,
+                    data.creditCards,
+                    data.invoices
+                );
 
                 return {
                     [key]: {
                         ...data,
                         transactions: [newTransaction, ...data.transactions],
                         accounts: updatedAccounts,
-                        creditCards: updatedCards
+                        creditCards: updatedCards,
+                        invoices: updatedInvoices
                     }
                 };
             }),
@@ -363,114 +302,70 @@ export const useFinanceStore = create<FinanceState>()(
                 // RECURRENCE HANDLING
                 // If it's a recurring transaction and we are editing only one month
                 if (scope === 'single' && refMonth && (oldTransaction.isFixed || oldTransaction.isRecurring)) {
-                    // 1. Mark this month as excluded in the original transaction
                     const updatedRecurrence = {
                         ...oldTransaction.recurrence,
                         excludedDates: [...(oldTransaction.recurrence?.excludedDates || []), refMonth]
                     };
 
-                    // 2. Create a NEW single transaction for this month
                     const newSingleId = Math.random().toString(36).substr(2, 9);
                     const newSingle: Transaction = {
                         ...oldTransaction,
                         ...updated,
                         id: newSingleId,
-                        parentTransactionId: id, // Link back to the parent
-                        date: `${refMonth}-${oldTransaction.date.split('-')[2] || '01'}`, // Preserve the original day
+                        parentTransactionId: id,
+                        date: `${refMonth}-${oldTransaction.date.split('-')[2] || '01'}`,
                         isFixed: false,
                         isRecurring: false,
                         recurrence: undefined,
                         createdAt: new Date().toISOString()
                     } as Transaction;
 
-                    // Update balances for both
-                    // (The balance impact for 'old' in this month is already handled by filters if it's excluded)
-                    // But we actually need to update the STORE's transactions array
-
                     const updatedTransactions = [
                         ...data.transactions.map(t => t.id === id ? { ...t, recurrence: updatedRecurrence } : t),
                         newSingle
                     ];
 
-                    // Now handle balance impact for the new transaction (if confirmed)
-                    // (Simplified for this version - actual balance logic below stays mostly the same)
-                    // Let's re-run the balance logic on the final state
+                    const { updatedAccounts, updatedCards, updatedInvoices } = FinancialEngine.applyTransactionImpact(
+                        newSingle,
+                        data.accounts,
+                        data.creditCards,
+                        data.invoices
+                    );
 
                     return {
                         [key]: {
                             ...data,
-                            transactions: updatedTransactions
+                            transactions: updatedTransactions,
+                            accounts: updatedAccounts,
+                            creditCards: updatedCards,
+                            invoices: updatedInvoices
                         }
                     };
                 }
 
                 // DEFAULT 'ALL' UPDATE
-                let updatedAccounts = [...data.accounts];
-                let updatedCards = [...data.creditCards];
-                let updatedInvoices = [...data.invoices];
+                const { updatedAccounts: acc1, updatedCards: cards1, updatedInvoices: inv1 } = FinancialEngine.revertTransactionImpact(
+                    oldTransaction,
+                    data.accounts,
+                    data.creditCards,
+                    data.invoices
+                );
 
-                const revertImpact = (t: Transaction) => {
-                    if (t.status !== 'confirmed') return;
-                    if (t.type === 'transfer') {
-                        updatedAccounts = updatedAccounts.map(acc => {
-                            if (acc.id === t.accountId) return { ...acc, currentBalance: acc.currentBalance + Number(t.value) };
-                            if (acc.id === t.toAccountId) return { ...acc, currentBalance: acc.currentBalance - Number(t.value) };
-                            return acc;
-                        });
-                    } else if (t.accountId) {
-                        updatedAccounts = updatedAccounts.map(acc => {
-                            if (acc.id === t.accountId) return { ...acc, currentBalance: acc.currentBalance + (Number(t.value) * (t.type === 'income' ? -1 : 1)) };
-                            return acc;
-                        });
-                    } else if (t.creditCardId) {
-                        const monthStr = t.date.slice(0, 7);
-                        updatedCards = updatedCards.map(card => {
-                            if (card.id === t.creditCardId) return { ...card, limitAvailable: card.limitAvailable + Number(t.value) };
-                            return card;
-                        });
-                        updatedInvoices = updatedInvoices.map(inv => {
-                            if (inv.creditCardId === t.creditCardId && inv.month === monthStr) return { ...inv, totalValue: Math.max(0, inv.totalValue - Number(t.value)) };
-                            return inv;
-                        });
-                    }
-                };
-
-                const applyImpact = (t: Transaction) => {
-                    if (t.status !== 'confirmed') return;
-                    if (t.type === 'transfer') {
-                        updatedAccounts = updatedAccounts.map(acc => {
-                            if (acc.id === t.accountId) return { ...acc, currentBalance: acc.currentBalance - Number(t.value) };
-                            if (acc.id === t.toAccountId) return { ...acc, currentBalance: acc.currentBalance + Number(t.value) };
-                            return acc;
-                        });
-                    } else if (t.accountId) {
-                        updatedAccounts = updatedAccounts.map(acc => {
-                            if (acc.id === t.accountId) return { ...acc, currentBalance: acc.currentBalance + (Number(t.value) * (t.type === 'income' ? 1 : -1)) };
-                            return acc;
-                        });
-                    } else if (t.creditCardId) {
-                        const monthStr = t.date.slice(0, 7);
-                        updatedCards = updatedCards.map(card => {
-                            if (card.id === t.creditCardId) return { ...card, limitAvailable: card.limitAvailable - Number(t.value) };
-                            return card;
-                        });
-                        const invIdx = updatedInvoices.findIndex(inv => inv.creditCardId === t.creditCardId && inv.month === monthStr);
-                        if (invIdx >= 0) updatedInvoices[invIdx] = { ...updatedInvoices[invIdx], totalValue: updatedInvoices[invIdx].totalValue + Number(t.value) };
-                        else updatedInvoices.push({ id: Math.random().toString(36).substr(2, 9), creditCardId: t.creditCardId, month: monthStr, status: 'open', totalValue: Number(t.value), dueDate: `${monthStr}-10` });
-                    }
-                };
-
-                revertImpact(oldTransaction);
                 const newTransaction = { ...oldTransaction, ...updated } as Transaction;
-                applyImpact(newTransaction);
+                const { updatedAccounts: finalAcc, updatedCards: finalCards, updatedInvoices: finalInv } = FinancialEngine.applyTransactionImpact(
+                    newTransaction,
+                    acc1,
+                    cards1,
+                    inv1
+                );
 
                 return {
                     [key]: {
                         ...data,
                         transactions: data.transactions.map(t => t.id === id ? newTransaction : t),
-                        accounts: updatedAccounts,
-                        creditCards: updatedCards,
-                        invoices: updatedInvoices
+                        accounts: finalAcc,
+                        creditCards: finalCards,
+                        invoices: finalInv
                     }
                 };
             }),
@@ -499,45 +394,30 @@ export const useFinanceStore = create<FinanceState>()(
                 const idsToDelete = [id, ...data.transactions.filter(t => t.parentTransactionId === id).map(t => t.id)];
                 const transactionsToDelete = data.transactions.filter(t => idsToDelete.includes(t.id));
 
-                let updatedAccounts = [...data.accounts];
-                let updatedCards = [...data.creditCards];
-                let updatedInvoices = [...data.invoices];
+                let currentAccounts = [...data.accounts];
+                let currentCards = [...data.creditCards];
+                let currentInvoices = [...data.invoices];
 
                 // Revert impact for each transaction being deleted
                 transactionsToDelete.forEach(t => {
-                    if (t.status === 'confirmed') {
-                        if (t.type === 'transfer') {
-                            updatedAccounts = updatedAccounts.map(acc => {
-                                if (acc.id === t.accountId) return { ...acc, currentBalance: acc.currentBalance + Number(t.value) };
-                                if (acc.id === t.toAccountId) return { ...acc, currentBalance: acc.currentBalance - Number(t.value) };
-                                return acc;
-                            });
-                        } else if (t.accountId) {
-                            updatedAccounts = updatedAccounts.map(acc => {
-                                if (acc.id === t.accountId) return { ...acc, currentBalance: acc.currentBalance + (Number(t.value) * (t.type === 'income' ? -1 : 1)) };
-                                return acc;
-                            });
-                        } else if (t.creditCardId) {
-                            const monthStr = t.date.slice(0, 7);
-                            updatedCards = updatedCards.map(card => {
-                                if (card.id === t.creditCardId) return { ...card, limitAvailable: card.limitAvailable + Number(t.value) };
-                                return card;
-                            });
-                            updatedInvoices = updatedInvoices.map(inv => {
-                                if (inv.creditCardId === t.creditCardId && inv.month === monthStr) return { ...inv, totalValue: Math.max(0, inv.totalValue - Number(t.value)) };
-                                return inv;
-                            });
-                        }
-                    }
+                    const { updatedAccounts, updatedCards, updatedInvoices } = FinancialEngine.revertTransactionImpact(
+                        t,
+                        currentAccounts,
+                        currentCards,
+                        currentInvoices
+                    );
+                    currentAccounts = updatedAccounts;
+                    currentCards = updatedCards;
+                    currentInvoices = updatedInvoices;
                 });
 
                 return {
                     [key]: {
                         ...data,
                         transactions: data.transactions.filter(t => !idsToDelete.includes(t.id)),
-                        accounts: updatedAccounts,
-                        creditCards: updatedCards,
-                        invoices: updatedInvoices
+                        accounts: currentAccounts,
+                        creditCards: currentCards,
+                        invoices: currentInvoices
                     }
                 };
             }),
@@ -668,6 +548,27 @@ export const useFinanceStore = create<FinanceState>()(
                     }
                 };
             }),
+
+            recalculateBalances: () => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                const data = state[key];
+
+                const { rebuiltAccounts, rebuiltCards, rebuiltInvoices } = FinancialEngine.rebuildBalances(
+                    data.transactions,
+                    data.accounts,
+                    data.creditCards,
+                    data.invoices
+                );
+
+                return {
+                    [key]: {
+                        ...data,
+                        accounts: rebuiltAccounts,
+                        creditCards: rebuiltCards,
+                        invoices: rebuiltInvoices
+                    }
+                };
+            }),
         }),
         { name: 'nexfinance-user-data' }
     )
@@ -737,17 +638,6 @@ if (typeof window !== 'undefined') {
             referenceMonth: state.referenceMonth,
             viewMonth: state.viewMonth
         };
-
-        // Auto-sync to disk on every change (Dev mode only)
-        if (window.location.hostname === 'localhost') {
-            if (cloudTimeout) clearTimeout(cloudTimeout);
-            // This timeout will be shared and overwritten below, so we just run the fetch synchronously for local dev caching
-            fetch('/api/save-db', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ state: statePayload, version: 0 })
-            }).catch(err => console.error("AUTO-SYNC ERROR:", err));
-        }
 
         // Auto-sync to Supabase Realtime Table (PC -> Phone)
         // If the state change was triggered BY Supabase (payload incoming), we don't upload it back

@@ -29,6 +29,7 @@ import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
 import MonthSelector from '@/components/MonthSelector';
 import { createPortal } from 'react-dom';
+import { FinancialEngine } from '@/lib/FinancialEngine';
 
 const DEFAULT_WIDGETS = [
   { id: 'proj_30', label: 'Projeção 30 dias', visible: true },
@@ -103,30 +104,12 @@ const Dashboard: React.FC = () => {
     return data.transactions.filter(t => isTransactionInMonth(t, referenceMonth));
   }, [data?.transactions, referenceMonth]);
 
-  const totalAccountsBalance = useMemo(() => {
-    if (!data?.accounts) return 0;
-    return data.accounts
-      .filter(acc => acc.includeInTotal && acc.status === 'active')
-      .reduce((sum, acc) => sum + acc.currentBalance, 0);
-  }, [data?.accounts]);
-
-  const totalOpenInvoices = useMemo(() => {
-    if (!data?.invoices) return 0;
-    return data.invoices
-      .filter((inv: any) => inv.status !== 'paid')
-      .reduce((sum: number, inv: any) => sum + inv.totalValue, 0);
-  }, [data?.invoices]);
-
   // Liquidez Real = saldo das contas ativas que foram confirmadas
-  const liquidBalance = totalAccountsBalance;
+  const liquidBalance = useMemo(() => FinancialEngine.calculateRealLiquidity(data?.accounts || []), [data?.accounts]);
 
   // Para transações recorrentes/fixas em meses futuros, o status é sempre 'forecast'
   const getEffectiveStatus = (t: any): string => {
-    if (!t?.date) return 'forecast';
-    if (!t.isRecurring && !t.isFixed) return t.status || 'forecast';
-    const originalMonth = t.date.slice(0, 7);
-    if (originalMonth === referenceMonth) return t.status || 'forecast';
-    return 'forecast';
+    return FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth);
   };
 
   // Entradas e Saídas do mês (todas, confirmadas ou não)
