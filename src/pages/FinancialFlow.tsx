@@ -27,10 +27,11 @@ const FinancialFlow: React.FC = () => {
     }, [data]);
 
     const formatCurrency = (value: number) => {
+        const val = Number(value) || 0;
         return new Intl.NumberFormat('pt-PT', {
             style: 'currency',
             currency: settings.currency || 'EUR'
-        }).format(value);
+        }).format(val);
     };
 
     const formatDate = (dateStr: string) => {
@@ -107,7 +108,7 @@ const FinancialFlow: React.FC = () => {
                                             <div className="timeline-info">
                                                 <h4 className="timeline-title">{event.description}</h4>
                                                 <span className="timeline-category">
-                                                    {data.categories.find(c => c.id === event.category)?.name || 'Outros'}
+                                                    {(data?.categories || []).find(c => c.id === event.category)?.name || 'Outros'}
                                                 </span>
                                             </div>
                                             <div className="timeline-values">
