@@ -14,15 +14,48 @@ import {
   Settings as SettingsIcon,
   X,
   Check,
-  Layout
+  Layout,
+  Target,
+  Bell,
+  BarChart3,
+  PieChart as PieChartIcon,
+  Activity
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
-import { format, parseISO, isAfter, isBefore, startOfDay, addDays } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, startOfDay, addDays, subMonths, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
 import { FinancialEngine } from '@/lib/FinancialEngine';
 import PageLayout from '@/components/PageLayout';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+} from 'chart.js';
+import { Bar, Doughnut } from 'react-chartjs-2';
+
+// ChartJS registration
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+  PointElement,
+  LineElement,
+  Filler
+);
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -107,10 +140,90 @@ const Dashboard: React.FC = () => {
     return { count: p.length, value: p.reduce((sum, t) => sum + (Number(t.value) || 0), 0) };
   }, [monthlyTransactions, referenceMonth]);
 
-  const pendingIncomes = useMemo(() => {
-    const p = monthlyTransactions.filter(t => t.type === 'income' && !t.isIgnored && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) !== 'confirmed');
-    return { count: p.length, value: p.reduce((sum, t) => sum + (Number(t.value) || 0), 0) };
+  // Comparison with previous month for "Insights"
+  const previousMonthExpenseTotal = useMemo(() => {
+    if (!data?.transactions) return 0;
+    const [yr, mo] = referenceMonth.split('-').map(Number);
+    const prevDate = subMonths(new Date(yr, mo - 1, 1), 1);
+    const prevMonthStr = format(prevDate, 'yyyy-MM');
+    const prevT = data.transactions.filter(t => FinancialEngine.isTransactionInMonth(t, prevMonthStr));
+    return prevT.filter(t => t.type === 'expense' && !t.isIgnored).reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+  }, [data?.transactions, referenceMonth]);
+
+  const expenseVariation = useMemo(() => {
+    if (previousMonthExpenseTotal === 0) return 0;
+    return ((expenseTotal - previousMonthExpenseTotal) / previousMonthExpenseTotal) * 100;
+  }, [expenseTotal, previousMonthExpenseTotal]);
+
+  const hasNegativeProjection = useMemo(() => {
+    const flow = FinancialEngine.getMonthFlow(data.transactions, data.accounts, referenceMonth);
+    return flow.events.some((e: any) => e.resultingBalance < 0);
+  }, [data, referenceMonth]);
+
+  // --- CHART DATA ---
+
+  const monthlyFlowChartData = useMemo(() => {
+    const [yr, mo] = referenceMonth.split('-').map(Number);
+    const start = startOfMonth(new Date(yr, mo - 1, 1));
+    const end = endOfMonth(start);
+    const daysInMonth = eachDayOfInterval({ start, end });
+
+    const labels = daysInMonth.map(day => format(day, 'dd'));
+    const incomes = daysInMonth.map(day => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      return monthlyTransactions
+        .filter(t => t.type === 'income' && !t.isIgnored && FinancialEngine.getAdjustedDate(t.date, referenceMonth) === dayStr)
+        .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+    });
+    const expenses = daysInMonth.map(day => {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      return monthlyTransactions
+        .filter(t => t.type === 'expense' && !t.isIgnored && FinancialEngine.getAdjustedDate(t.date, referenceMonth) === dayStr)
+        .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+    });
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Entradas',
+          data: incomes,
+          backgroundColor: 'rgba(16, 185, 129, 0.6)',
+          borderRadius: 4,
+        },
+        {
+          label: 'Saídas',
+          data: expenses,
+          backgroundColor: 'rgba(239, 68, 68, 0.6)',
+          borderRadius: 4,
+        }
+      ]
+    };
   }, [monthlyTransactions, referenceMonth]);
+
+  const categoriesChartData = useMemo(() => {
+    const categoryTotals: Record<string, number> = {};
+    monthlyTransactions
+      .filter(t => t.type === 'expense' && !t.isIgnored)
+      .forEach(t => {
+        const catName = data.categories.find(c => c.id === t.categoryId)?.name || 'Outros';
+        categoryTotals[catName] = (categoryTotals[catName] || 0) + (Number(t.value) || 0);
+      });
+
+    const labels = Object.keys(categoryTotals);
+    const values = Object.values(categoryTotals);
+
+    return {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: [
+          '#3b82f6', '#10b981', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'
+        ],
+        borderWidth: 0,
+      }]
+    };
+  }, [monthlyTransactions, data.categories]);
 
   // --- UI COMPONENTS ---
 
@@ -192,23 +305,23 @@ const Dashboard: React.FC = () => {
       <div className="sys-summary-widget-header" style={{ marginTop: '16px' }}>
         Alertas Rápidos
       </div>
-      {(pendingExpenses.count > 0 || pendingIncomes.count > 0) ? (
+      {(pendingExpenses.count > 0 || hasNegativeProjection) ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {hasNegativeProjection && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '10px' }}>
+              <AlertCircle size={14} className="color-red" />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--sys-red)' }}>Risco de Saldo</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>Projeção negativa detectada</span>
+              </div>
+            </div>
+          )}
           {pendingExpenses.count > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '10px' }}>
               <ArrowDown size={14} className="color-red" />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '13px', fontWeight: 700 }}>{formatCurrency(pendingExpenses.value)}</span>
                 <span style={{ fontSize: '11px', color: '#64748b' }}>{pendingExpenses.count} despesas abertas</span>
-              </div>
-            </div>
-          )}
-          {pendingIncomes.count > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '10px' }}>
-              <ArrowUp size={14} className="color-green" />
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700 }}>{formatCurrency(pendingIncomes.value)}</span>
-                <span style={{ fontSize: '11px', color: '#64748b' }}>{pendingIncomes.count} receitas abertas</span>
               </div>
             </div>
           )}
@@ -223,138 +336,267 @@ const Dashboard: React.FC = () => {
 
   return (
     <PageLayout title="Visão Geral" actions={dashboardActions} summaryPanel={summaryPanel}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
 
-        {/* 1. KPIs ALWAYS VISIBLE - Using new sys-grid */}
-        <div className="sys-grid">
-          <div className="sys-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Liquidez Atual</span>
-              <div className="sys-summary-icon-box bg-blue" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
-                <Wallet size={16} />
+        {/* 1. INDICADORES PRINCIPAIS */}
+        <section>
+          <div className="sys-grid">
+            <div className="sys-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Liquidez Atual</span>
+                <div className="sys-summary-icon-box bg-blue" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                  <Wallet size={16} />
+                </div>
               </div>
+              <div className="sys-financial-value">{formatCurrency(currentLiquidity)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>Saldo total em contas</div>
             </div>
-            <div className="sys-financial-value">{formatCurrency(currentLiquidity)}</div>
-            <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>Saldo total em contas</div>
-          </div>
-          <div className="sys-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Entradas</span>
-              <div className="sys-summary-icon-box bg-green" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
-                <TrendingUp size={16} />
+            <div className="sys-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Entradas do Mês</span>
+                <div className="sys-summary-icon-box bg-green" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                  <TrendingUp size={16} />
+                </div>
               </div>
+              <div className="sys-financial-value color-green">{formatCurrency(incomeTotal)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>Recebido até o momento</div>
             </div>
-            <div className="sys-financial-value color-green">{formatCurrency(incomeTotal)}</div>
-            <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>
-              Recebido em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
-            </div>
-          </div>
-          <div className="sys-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Saídas</span>
-              <div className="sys-summary-icon-box bg-red" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
-                <TrendingDown size={16} />
+            <div className="sys-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Saídas do Mês</span>
+                <div className="sys-summary-icon-box bg-red" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                  <TrendingDown size={16} />
+                </div>
               </div>
+              <div className="sys-financial-value color-red">{formatCurrency(expenseTotal)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>Gastos totais no mês</div>
             </div>
-            <div className="sys-financial-value color-red">{formatCurrency(expenseTotal)}</div>
-            <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>
-              Gasto em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
-            </div>
-          </div>
-          <div className="sys-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Fim do Mês</span>
-              <div className="sys-summary-icon-box bg-yellow" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
-                <Calendar size={16} />
+            <div className="sys-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Saldo Projetado</span>
+                <div className="sys-summary-icon-box bg-yellow" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                  <Calendar size={16} />
+                </div>
               </div>
-            </div>
-            <div className={`sys-financial-value ${projectedEndBalance >= 0 ? 'color-green' : 'color-red'}`}>{formatCurrency(projectedEndBalance)}</div>
-            <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>
-              Projeção final
+              <div className={`sys-financial-value ${projectedEndBalance >= 0 ? 'color-green' : 'color-red'}`}>{formatCurrency(projectedEndBalance)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>Expectativa para fim do mês</div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* 2. ZONA DE INSIGHTS & ATIVIDADE (WIDGETS CUSTOMIZÁVEIS) */}
-        <div>
-          <h2 className="sys-subtitle" style={{ margin: '0 0 16px 0' }}>Insights Financeiros</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
-            {/* Widget: Alertas/Pendentes */}
-            <WidgetWrapper id="pending" label="Alertas e Pendências">
-              <div className="sys-card" onClick={() => navigate('/transactions?filter=pending')} style={{ cursor: 'pointer', height: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-red)' }}>
-                      <AlertCircle size={18} />
-                    </div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Faturas em Aberto</h3>
-                  </div>
+        {/* 2. GRÁFICOS FINANCEIROS */}
+        <section>
+          <div style={{ display: 'grid', gridTemplateColumns: 'reapeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }} className="sys-grid-2-cols">
+            <div className="sys-card" style={{ height: '350px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <BarChart3 size={18} color="var(--sys-primary)" />
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Fluxo Financeiro do Mês</h3>
+              </div>
+              <div style={{ height: '260px', width: '100%' }}>
+                <Bar
+                  data={monthlyFlowChartData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: { backgroundColor: '#1e293b', padding: 12, cornerRadius: 8 }
+                    },
+                    scales: {
+                      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' }, border: { display: false } },
+                      x: { grid: { display: false }, border: { display: false } }
+                    }
+                  }}
+                />
+              </div>
+            </div>
+            <div className="sys-card" style={{ height: '350px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                <PieChartIcon size={18} color="var(--sys-primary)" />
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Distribuição por Categoria</h3>
+              </div>
+              <div style={{ height: '260px', width: '100%', display: 'flex', justifyContent: 'center' }}>
+                <div style={{ width: '220px' }}>
+                  <Doughnut
+                    data={categoriesChartData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 15, font: { size: 10 } } }
+                      },
+                      cutout: '70%'
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. INSIGHTS FINANCEIROS E ALERTAS */}
+        <section>
+          <h2 className="sys-subtitle" style={{ margin: '0 0 16px 0' }}>Insights e Alertas Inteligentes</h2>
+          <div className="sys-grid">
+            {/* Insight 1: Variação de Gastos */}
+            <div className="sys-card" style={{ borderLeft: `4px solid ${expenseVariation > 0 ? 'var(--sys-red)' : 'var(--sys-green)'}` }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: expenseVariation > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: expenseVariation > 0 ? 'var(--sys-red)' : 'var(--sys-green)' }}>
+                  <Activity size={20} />
                 </div>
                 <div>
-                  {(pendingExpenses.count > 0 || pendingIncomes.count > 0) ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      {pendingExpenses.count > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div style={{ padding: '8px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--sys-red)', borderRadius: '10px' }}>
-                            <ArrowDown size={16} />
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--sys-red)' }}>{formatCurrency(pendingExpenses.value)}</span>
-                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{pendingExpenses.count} pagamentos pendentes</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', color: 'var(--sys-green)', fontWeight: 600, fontSize: '14px', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderRadius: '12px' }}>
-                      Financeiro em Dia
-                    </div>
-                  )}
+                  <h4 style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Variação de Gastos</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 800, color: expenseVariation > 0 ? 'var(--sys-red)' : 'var(--sys-green)' }}>
+                      {expenseVariation > 0 ? '+' : ''}{expenseVariation.toFixed(1)}%
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>em relação ao mês anterior</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Insight 2: Alerta de Risco de Saldo */}
+            <div className="sys-card" style={{ borderLeft: `4px solid ${hasNegativeProjection ? 'var(--sys-red)' : 'var(--sys-blue)'}` }}>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: hasNegativeProjection ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: hasNegativeProjection ? 'var(--sys-red)' : 'var(--sys-blue)' }}>
+                  <AlertCircle size={20} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Projeção de Saldo</h4>
+                  <p style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: '#1e293b' }}>
+                    {hasNegativeProjection ? "Atenção: Risco de saldo negativo" : "Fluxo de caixa saudável"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Insight 3: Próximo Vencimento Crítico */}
+            {displayUpcoming.length > 0 && (
+              <div className="sys-card" style={{ borderLeft: '4px solid var(--sys-warning)' }}>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-warning)' }}>
+                    <Clock size={20} />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Vencimento Próximo</h4>
+                    <p style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: '#1e293b' }}>
+                      {displayUpcoming[0].description} ({formatCurrency(displayUpcoming[0].value)})
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* 4. MÓDULOS CONFIGURÁVEIS */}
+        <section>
+          <h2 className="sys-subtitle" style={{ margin: '0 0 16px 0' }}>Módulos Configuráveis</h2>
+          <div className="sys-grid">
+            <WidgetWrapper id="fluxo_30_dias" label="Fluxo 30 Dias">
+              <div className="sys-card" onClick={() => navigate('/financial-flow')} style={{ cursor: 'pointer' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <Activity size={18} color="var(--sys-blue)" />
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Fluxo de 30 Dias</h3>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '20px', fontWeight: 800 }}>{formatCurrency(projectedEndBalance)}</span>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>Saldo previsto em 30 dias</span>
+                  </div>
+                  <ArrowUpRight size={20} color="#94a3b8" />
                 </div>
               </div>
             </WidgetWrapper>
 
-            {/* Widget: Vencimentos */}
             <WidgetWrapper id="upcoming" label="Próximos Vencimentos">
               <div className="sys-card">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--sys-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-primary)' }}>
-                      <Clock size={18} />
-                    </div>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Vencendo em Breve</h3>
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <Clock size={18} color="var(--sys-warning)" />
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Próximos Vencimentos</h3>
                 </div>
-                <div>
-                  {displayUpcoming.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {displayUpcoming.map((item, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: i === displayUpcoming.length - 1 ? 'none' : '1px solid var(--sys-border)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
-                            <div style={{
-                              width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
-                              backgroundColor: item.daysLeft < 0 ? 'var(--sys-red)' : 'var(--sys-warning)'
-                            }} />
-                            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--sys-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--sys-text-secondary)' }}>{format(item.effDate, "dd/MM")} {item.daysLeft < 0 ? ` · Vencido` : item.daysLeft === 0 ? ' · Hoje' : ` · em ${item.daysLeft}d`}</span>
-                            </div>
-                          </div>
-                          <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--sys-red)', whiteSpace: 'nowrap' }}>{formatCurrency(item.value)}</span>
-                        </div>
-                      ))}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {displayUpcoming.slice(0, 3).map((item, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                      <span style={{ fontWeight: 600, color: '#475569' }}>{item.description}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--sys-red)' }}>{formatCurrency(item.value)}</span>
                     </div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', color: '#94a3b8' }}>
-                      <CheckCircle2 size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                      <span style={{ fontSize: '13px', fontWeight: 500 }}>Nenhum débito pendente</span>
+                  ))}
+                  {displayUpcoming.length === 0 && <span style={{ fontSize: '12px', color: '#94a3b8' }}>Sem débitos próximos</span>}
+                </div>
+              </div>
+            </WidgetWrapper>
+
+            <WidgetWrapper id="metas" label="Metas Financeiras">
+              <div className="sys-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <Target size={18} color="var(--sys-green)" />
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Metas Ativas</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600 }}>
+                      <span>Reserva de Emergência</span>
+                      <span>65%</span>
                     </div>
-                  )}
+                    <div style={{ height: '6px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: '65%', backgroundColor: 'var(--sys-green)' }} />
+                    </div>
+                  </div>
+                  <button className="sys-btn-minimal" style={{ fontSize: '11px', padding: 0, justifyContent: 'flex-start' }} onClick={() => navigate('/goals')}>Ver todas as metas</button>
+                </div>
+              </div>
+            </WidgetWrapper>
+
+            <WidgetWrapper id="orcamento" label="Orçamento por Categoria">
+              <div className="sys-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <PieChartIcon size={18} color="var(--sys-blue)" />
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Maiores Gastos</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {Object.entries(
+                    monthlyTransactions
+                      .filter(t => t.type === 'expense' && !t.isIgnored)
+                      .reduce((acc: any, t) => {
+                        const name = data.categories.find(c => c.id === t.categoryId)?.name || 'Outros';
+                        acc[name] = (acc[name] || 0) + Number(t.value);
+                        return acc;
+                      }, {})
+                  )
+                    .sort(([, a]: any, [, b]: any) => b - a)
+                    .slice(0, 3)
+                    .map(([name, value]: any, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                        <span style={{ color: '#64748b' }}>{name}</span>
+                        <span style={{ fontWeight: 700 }}>{formatCurrency(value)}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </WidgetWrapper>
+
+            <WidgetWrapper id="alertas" label="Alertas Financeiros">
+              <div className="sys-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <Bell size={18} color="var(--sys-blue)" />
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Alertas do Sistema</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', color: '#475569', display: 'flex', gap: '8px' }}>
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--sys-blue)', marginTop: '6px' }} />
+                    <span>Lembrete: Conciliar faturas de cartões</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#475569', display: 'flex', gap: '8px' }}>
+                    <div style={{ width: '4px', height: '4px', borderRadius: '50%', backgroundColor: 'var(--sys-blue)', marginTop: '6px' }} />
+                    <span>Revisar limites por categoria</span>
+                  </div>
                 </div>
               </div>
             </WidgetWrapper>
           </div>
-        </div>
+        </section>
 
         {isCustomizing && (
           <div className="sys-card" style={{ backgroundColor: '#f8fafc', borderStyle: 'dashed', textAlign: 'center', padding: '32px' }}>
@@ -382,6 +624,16 @@ const Dashboard: React.FC = () => {
         }
         .widget-hidden {
             order: 999;
+        }
+        .sys-grid-2-cols {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+        @media (max-width: 1024px) {
+            .sys-grid-2-cols {
+                grid-template-columns: 1fr;
+            }
         }
     `}</style>
     </PageLayout>
