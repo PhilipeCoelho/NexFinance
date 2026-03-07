@@ -11,16 +11,14 @@ import {
   ArrowUp,
   ArrowDown,
   CheckCircle2,
-  MoreHorizontal,
   Settings as SettingsIcon,
   X,
-  Layout,
-  GripVertical,
-  Check
+  Check,
+  Layout
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
-import { format, parseISO, isAfter, isBefore, startOfDay, addDays, subDays } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, startOfDay, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
 import { FinancialEngine } from '@/lib/FinancialEngine';
@@ -82,16 +80,13 @@ const Dashboard: React.FC = () => {
     return projectedInitialBalance + incomeTotal - expenseTotal;
   }, [projectedInitialBalance, incomeTotal, expenseTotal]);
 
-
-  // --- WIDGET DATA HELPERS ---
-
   const displayUpcoming = useMemo(() => {
     const today = startOfDay(new Date());
     return monthlyTransactions
       .filter(t => {
         if (t.type !== 'expense' || t.isIgnored) return false;
-        const st = FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth);
-        if (st === 'confirmed') return false;
+        const status = FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth);
+        if (status === 'confirmed') return false;
         return true;
       })
       .map(t => {
@@ -105,37 +100,17 @@ const Dashboard: React.FC = () => {
       .slice(0, 5);
   }, [monthlyTransactions, referenceMonth]);
 
-  const timelineData = useMemo(() => {
-    const sorted = [...monthlyTransactions].sort((a, b) => a.date.localeCompare(b.date));
-    let runningBalance = projectedInitialBalance;
-    return sorted.map(t => {
-      const val = Number(t.value) || 0;
-      if (!t.isIgnored) {
-        if (t.type === 'income') runningBalance += val;
-        else if (t.type === 'expense') runningBalance -= val;
-      }
-      return { ...t, runningBalance };
-    });
-  }, [monthlyTransactions, projectedInitialBalance]);
+  const pendingExpenses = useMemo(() => {
+    const p = monthlyTransactions.filter(t => t.type === 'expense' && !t.isIgnored && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) !== 'confirmed');
+    return { count: p.length, value: p.reduce((sum, t) => sum + (Number(t.value) || 0), 0) };
+  }, [monthlyTransactions, referenceMonth]);
+
+  const pendingIncomes = useMemo(() => {
+    const p = monthlyTransactions.filter(t => t.type === 'income' && !t.isIgnored && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) !== 'confirmed');
+    return { count: p.length, value: p.reduce((sum, t) => sum + (Number(t.value) || 0), 0) };
+  }, [monthlyTransactions, referenceMonth]);
 
   // --- UI COMPONENTS ---
-
-  const KPICard = ({ title, value, subtitle, colorClass, icon: Icon }: any) => (
-    <div className="sys-card" style={{ flex: 1, minWidth: '240px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</span>
-        <div className={`sys-summary-icon-box ${colorClass}`} style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
-          <Icon size={16} />
-        </div>
-      </div>
-      <div style={{ fontSize: '24px', fontWeight: 800, color: '#1a1d21', marginBottom: '4px' }}>
-        <span className={colorClass === 'bg-green' ? 'color-green' : colorClass === 'bg-red' ? 'color-red' : ''}>
-          {formatCurrency(value)}
-        </span>
-      </div>
-      <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>{subtitle}</div>
-    </div>
-  );
 
   const WidgetWrapper = ({ id, label, children, isFullWidth = false }: any) => {
     const widget = settings.dashboardWidgets?.find(w => w.id === id);
@@ -196,144 +171,144 @@ const Dashboard: React.FC = () => {
     <PageLayout title="Visão Geral" actions={dashboardActions}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
-        {/* 1. KPIs ALWAYS VISIBLE (Non-removable foundational metrics) */}
+        {/* 1. KPIs ALWAYS VISIBLE */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-          <KPICard
-            title="Liquidez Atual"
-            value={currentLiquidity}
-            subtitle="Saldo total em todas as contas"
-            colorClass="bg-blue"
-            icon={Wallet}
-          />
-          <KPICard
-            title="Entradas do Mês"
-            value={incomeTotal}
-            subtitle={`Recebido em ${format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}`}
-            colorClass="bg-green"
-            icon={TrendingUp}
-          />
-          <KPICard
-            title="Saídas do Mês"
-            value={expenseTotal}
-            subtitle={`Gasto em ${format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}`}
-            colorClass="bg-red"
-            icon={TrendingDown}
-          />
+          <div className="sys-card" style={{ flex: 1, minWidth: '240px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Liquidez Atual</span>
+              <div className="sys-summary-icon-box bg-blue" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                <Wallet size={16} />
+              </div>
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: '#1a1d21' }}>{formatCurrency(currentLiquidity)}</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Saldo total em contas</div>
+          </div>
+          <div className="sys-card" style={{ flex: 1, minWidth: '240px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Entradas</span>
+              <div className="sys-summary-icon-box bg-green" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                <TrendingUp size={16} />
+              </div>
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--sys-green)' }}>{formatCurrency(incomeTotal)}</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Recebido em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}</div>
+          </div>
+          <div className="sys-card" style={{ flex: 1, minWidth: '240px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Saídas</span>
+              <div className="sys-summary-icon-box bg-red" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                <TrendingDown size={16} />
+              </div>
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--sys-red)' }}>{formatCurrency(expenseTotal)}</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Gasto em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}</div>
+          </div>
         </div>
 
-        {/* 2. DYNAMIC WIDGETS AREA */}
+        {/* 2. DYNAMIC WIDGETS AREA - GRID STYLE (CARDS DE ANTIGAMENTE) */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
 
-          {/* Widget: Saldo Projetado Detail */}
-          <WidgetWrapper id="proj_30" label="Projeção Mensal">
+          {/* Widget: Saldo Projetado */}
+          <WidgetWrapper id="proj_30" label="Saldo Final Projetado">
             <div className="sys-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ padding: '8px', backgroundColor: 'var(--sys-bg)', borderRadius: '8px', color: 'var(--sys-yellow)' }}>
-                  <Calendar size={18} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--sys-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-warning)' }}>
+                    <Calendar size={18} />
+                  </div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Saldo Final Projetado</h3>
                 </div>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Saldo Final Projetado</h3>
+                <ArrowUpRight size={16} color="#94a3b8" />
               </div>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: projectedEndBalance >= 0 ? 'var(--sys-green)' : 'var(--sys-red)' }}>
-                {formatCurrency(projectedEndBalance)}
+              <div>
+                <span style={{ fontSize: '28px', fontWeight: 800, color: projectedEndBalance >= 0 ? 'var(--sys-green)' : 'var(--sys-red)' }}>{formatCurrency(projectedEndBalance)}</span>
+                <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>
+                  Expetativa para final de {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
+                </p>
               </div>
-              <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                Resultado acumulado em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
-              </p>
             </div>
           </WidgetWrapper>
 
-          {/* Widget: Upcoming Expenses */}
-          <WidgetWrapper id="upcoming" label="Vencimentos">
+          {/* Widget: Vencimentos */}
+          <WidgetWrapper id="upcoming" label="Vencimentos do Mês">
             <div className="sys-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ padding: '8px', backgroundColor: 'var(--sys-bg)', borderRadius: '8px', color: 'var(--sys-primary)' }}>
-                  <Clock size={18} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--sys-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-primary)' }}>
+                    <Clock size={18} />
+                  </div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Vencimentos do Mês</h3>
                 </div>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Vencimentos</h3>
               </div>
-              {displayUpcoming.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {displayUpcoming.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: i === displayUpcoming.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 600 }}>{item.description}</span>
-                        <span style={{ fontSize: '11px', color: '#94a3b8' }}>{format(item.effDate, 'dd/MM')} {item.daysLeft === 0 ? '· Hoje' : item.daysLeft < 0 ? `· Vencido há ${Math.abs(item.daysLeft)}d` : `· em ${item.daysLeft}d`}</span>
+              <div>
+                {displayUpcoming.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {displayUpcoming.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: i === displayUpcoming.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                          <div style={{
+                            width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                            backgroundColor: item.daysLeft < 0 ? 'var(--sys-red)' : 'var(--sys-warning)'
+                          }} />
+                          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1a1d21', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>{format(item.effDate, "dd/MM")} {item.daysLeft < 0 ? ` · Vencido há ${Math.abs(item.daysLeft)}d` : item.daysLeft === 0 ? ' · Hoje' : ` · em ${item.daysLeft}d`}</span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--sys-red)', whiteSpace: 'nowrap' }}>{formatCurrency(item.value)}</span>
                       </div>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--sys-red)' }}>{formatCurrency(item.value)}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ textAlign: 'center', padding: '16px', color: '#94a3b8', fontSize: '12px' }}>Tudo em dia!</div>
-              )}
-            </div>
-          </WidgetWrapper>
-
-          {/* Widget: Pending Alerts */}
-          <WidgetWrapper id="pending" label="Alertas e Alvos">
-            <div className="sys-card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ padding: '8px', backgroundColor: 'rgba(248, 81, 73, 0.1)', borderRadius: '8px', color: 'var(--sys-red)' }}>
-                  <AlertCircle size={18} />
-                </div>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>Alertas Críticos</h3>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {projectedEndBalance < 0 ? (
-                  <div style={{ padding: '12px', backgroundColor: '#fef2f2', borderRadius: '8px', borderLeft: '3px solid var(--sys-red)' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--sys-red)' }}>Previsão de Saldo Negativo</span>
-                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#94a3b8' }}>Revise suas despesas para evitar o cheque especial.</p>
+                    ))}
                   </div>
                 ) : (
-                  <div style={{ padding: '12px', backgroundColor: '#f0fdf4', borderRadius: '8px', borderLeft: '3px solid var(--sys-green)' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--sys-green)' }}>Metas Saudáveis</span>
-                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#94a3b8' }}>Você está dentro do planejamento para {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}.</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', color: '#94a3b8' }}>
+                    <CheckCircle2 size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                    <span style={{ fontSize: '13px', fontWeight: 500 }}>Tudo pago no mês</span>
                   </div>
                 )}
               </div>
             </div>
           </WidgetWrapper>
 
-          {/* Widget: Activity Timeline (The one they liked less but is useful) */}
-          <WidgetWrapper id="timeline" label="Fluxo de Caixa" isFullWidth={true}>
-            <div className="sys-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1a1d21', margin: 0 }}>Evolução do Fluxo de Caixa</h3>
-                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>PROJEÇÃO DIÁRIA</span>
+          {/* Widget: Alertas/Pendentes */}
+          <WidgetWrapper id="pending" label="Alertas e Pendências">
+            <div className="sys-card" onClick={() => navigate('/transactions?filter=pending')} style={{ cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-red)' }}>
+                    <AlertCircle size={18} />
+                  </div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Alertas</h3>
+                </div>
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table className="sys-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: '80px' }}>DATA</th>
-                      <th>DESCRIÇÃO</th>
-                      <th style={{ textAlign: 'right' }}>VALOR</th>
-                      <th style={{ textAlign: 'right', width: '150px' }}>SALDO ACUM.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {timelineData.slice(0, 10).map((t, i) => (
-                      <tr key={t.id}>
-                        <td style={{ fontSize: '12px', color: '#64748b' }}>{format(parseISO(t.date), 'dd/MM')}</td>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: t.type === 'income' ? 'var(--sys-green)' : 'var(--sys-red)' }} />
-                            <span style={{ fontWeight: 600, fontSize: '13px' }}>{t.description}</span>
-                          </div>
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, color: t.type === 'income' ? 'var(--sys-green)' : 'var(--sys-red)', fontSize: '13px' }}>
-                          {t.type === 'income' ? '+' : '-'}{formatCurrency(t.value).replace('-', '')}
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: 800, color: t.runningBalance >= 0 ? '#1e293b' : 'var(--sys-red)', fontSize: '13px' }}>
-                          {formatCurrency(t.runningBalance)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {timelineData.length > 10 && (
-                  <div style={{ padding: '12px', textAlign: 'center', borderTop: '1px solid #f1f5f9' }}>
-                    <button onClick={() => navigate('/transactions')} style={{ fontSize: '12px', color: 'var(--sys-blue)', fontWeight: 600, border: 'none', background: 'transparent', cursor: 'pointer' }}>VER TODAS AS TRANSAÇÕES</button>
+              <div>
+                {(pendingExpenses.count > 0 || pendingIncomes.count > 0) ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {pendingExpenses.count > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ padding: '8px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--sys-red)', borderRadius: '8px' }}>
+                          <ArrowDown size={16} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-red)' }}>{formatCurrency(pendingExpenses.value)}</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{pendingExpenses.count} despesas pendentes</span>
+                        </div>
+                      </div>
+                    )}
+                    {pendingIncomes.count > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ padding: '8px', backgroundColor: 'rgba(34, 197, 94, 0.1)', color: 'var(--sys-green)', borderRadius: '8px' }}>
+                          <ArrowUp size={16} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-green)' }}>{formatCurrency(pendingIncomes.value)}</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{pendingIncomes.count} receitas pendentes</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', color: 'var(--sys-green)', fontWeight: 600, fontSize: '14px', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px' }}>
+                    Sistema Reconciliado
                   </div>
                 )}
               </div>
@@ -347,10 +322,10 @@ const Dashboard: React.FC = () => {
             <Layout size={32} color="#94a3b8" style={{ marginBottom: '16px' }} />
             <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Customização do Dashboard</h3>
             <p style={{ fontSize: '13px', color: '#64748b', maxWidth: '400px', margin: '8px auto 24px' }}>
-              Use o botão de fechar/visto em cada card acima para ocultar ou exibir informações conforme sua preferência.
+              Ative ou desative os widgets que deseja visualizar no seu painel de controle.
             </p>
             <button className="sys-btn-primary" style={{ margin: '0 auto' }} onClick={() => setIsCustomizing(false)}>
-              Salvar Alterações
+              Ocultar Edição
             </button>
           </div>
         )}
@@ -359,7 +334,7 @@ const Dashboard: React.FC = () => {
 
       <TransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
-      {/* Action Center Button */}
+      {/* Float Button para Mobile/Quick Actions */}
       {!isCustomizing && (
         <button
           onClick={() => setIsModalOpen(true)}
@@ -375,12 +350,12 @@ const Dashboard: React.FC = () => {
 
       <style>{`
                 @keyframes wiggle {
-                    0% { transform: rotate(0.5deg); }
-                    50% { transform: rotate(-0.5deg); }
-                    100% { transform: rotate(0.5deg); }
+                    0% { transform: rotate(0.4deg); }
+                    50% { transform: rotate(-0.4deg); }
+                    100% { transform: rotate(0.4deg); }
                 }
                 .wiggle {
-                    animation: wiggle 0.3s ease-in-out infinite;
+                    animation: wiggle 0.5s ease-in-out infinite;
                 }
                 .widget-hidden {
                     order: 999;

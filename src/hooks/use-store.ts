@@ -107,7 +107,6 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
     { id: 'frequency', label: 'Frequência de gastos', visible: true },
     { id: 'savings', label: 'Economia mensal', visible: true },
     { id: 'goals', label: 'Objetivos', visible: true },
-    { id: 'timeline', label: 'Fluxo de Caixa', visible: true },
 ];
 
 export const useFinanceStore = create<FinanceState>()(
