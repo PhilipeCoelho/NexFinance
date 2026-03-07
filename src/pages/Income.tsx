@@ -26,7 +26,6 @@ import {
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData, getVisibleTransactions } from '@/hooks/use-store';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
 import PageLayout from '@/components/PageLayout';
 import { FinancialEngine } from '@/lib/FinancialEngine';
@@ -279,8 +278,8 @@ const Income: React.FC = () => {
                                         <button onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored }, 'single', viewMonth)} title={t.isIgnored ? "Considerar" : "Ignorar"} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                                             {t.isIgnored ? <Eye size={16} color="var(--sys-blue)" /> : <EyeOff size={16} color="#94a3b8" />}
                                         </button>
-                                        <button onClick={() => updateTransaction(t.id, { status: t.status === 'confirmed' ? 'forecast' : 'confirmed' }, (t.isFixed || t.isRecurring) ? 'single' : 'all', viewMonth)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                                            <Check size={16} color={t.status === 'confirmed' ? '#10b981' : '#cbd5e1'} />
+                                        <button onClick={() => updateTransaction(t.id, { status: FinancialEngine.getEffectiveTransactionStatus(t, viewMonth) === 'confirmed' ? 'forecast' : 'confirmed' }, (t.isFixed || t.isRecurring) ? 'single' : 'all', viewMonth)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                                            <Check size={16} color={FinancialEngine.getEffectiveTransactionStatus(t, viewMonth) === 'confirmed' ? '#10b981' : '#cbd5e1'} />
                                         </button>
                                         <button onClick={() => handleEdit(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Edit3 size={16} color="#94a3b8" /></button>
                                         <button onClick={() => handleDeleteTrigger(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Trash2 size={16} color="#94a3b8" /></button>
