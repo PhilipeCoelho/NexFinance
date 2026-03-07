@@ -386,17 +386,33 @@ export class FinancialEngine {
     }
 
     /**
-     * Ajusta visualmente a data de uma transação fixa/recorrente para o mês em visualização.
+     * Calcula o total gasto em uma categoria específica em um mês.
      */
-    static getAdjustedDate(dateStr: string, monthStr: string): string {
-        try {
-            if (!dateStr || !monthStr) return dateStr;
-            const day = dateStr.split('-')[2] || '01';
-            const [refY, refM] = monthStr.split('-');
-            if (dateStr.startsWith(monthStr)) return dateStr;
-            return `${refY}-${refM}-${day}`;
-        } catch (e) {
-            return dateStr;
-        }
+    static calculateCategorySpending(transactions: Transaction[], categoryId: string, month: string): number {
+        return transactions
+            .filter(t => t.categoryId === categoryId && t.type === 'expense' && !t.isIgnored && this.isTransactionInMonth(t, month))
+            .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+    }
+
+    /**
+     * Calcula indicadores de saúde financeira para um período.
+     */
+    static getFinancialHealth(transactions: Transaction[], month: string) {
+        const monthTxs = transactions.filter(t => !t.isIgnored && this.isTransactionInMonth(t, month));
+        const income = monthTxs.filter(t => t.type === 'income').reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+        const expenses = monthTxs.filter(t => t.type === 'expense').reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+
+        const savings = income - expenses;
+        const savingRate = income > 0 ? (savings / income) * 100 : 0;
+        const expenseRatio = income > 0 ? (expenses / income) * 100 : (expenses > 0 ? 100 : 0);
+
+        return {
+            income,
+            expenses,
+            savings,
+            savingRate: Math.max(0, savingRate),
+            expenseRatio,
+            status: savingRate > 20 ? 'excellent' : savingRate > 10 ? 'good' : savingRate > 0 ? 'warning' : 'critical'
+        };
     }
 }

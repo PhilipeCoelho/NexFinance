@@ -49,10 +49,11 @@ interface TransactionModalProps {
   forcedType?: 'income' | 'expense' | 'transfer';
   editingTransaction?: any;
   defaultAccountId?: string;
+  defaultCreditCardId?: string;
   activeMonth?: string;
 }
 
-const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, forcedType, editingTransaction, defaultAccountId, activeMonth }) => {
+const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, forcedType, editingTransaction, defaultAccountId, defaultCreditCardId, activeMonth }) => {
   const data = useCurrentData();
   const { addTransaction, updateTransaction, addCategory, settings, referenceMonth } = useFinanceStore();
   const effectiveMonth = activeMonth || referenceMonth;
@@ -86,7 +87,8 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
       status: 'forecast',
       value: 0,
       description: '',
-      accountId: data?.accounts?.[0]?.id || '',
+      accountId: defaultAccountId || data?.accounts?.[0]?.id || '',
+      creditCardId: defaultCreditCardId || '',
       categoryId: '',
       isFixed: false,
       isIgnored: false,

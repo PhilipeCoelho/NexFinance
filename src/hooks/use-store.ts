@@ -72,6 +72,16 @@ interface FinanceState {
     updateCategory: (id: string, category: Partial<Category>) => void;
     deleteCategory: (id: string) => void;
     recalculateBalances: () => void;
+
+    // Budgets
+    addBudget: (budget: any) => void;
+    updateBudget: (id: string, budget: any) => void;
+    deleteBudget: (id: string) => void;
+
+    // Goals
+    addGoal: (goal: any) => void;
+    updateGoal: (id: string, goal: any) => void;
+    deleteGoal: (id: string) => void;
 }
 
 const emptyContext = (): FinanceContextData => ({
@@ -584,6 +594,74 @@ export const useFinanceStore = create<FinanceState>()(
                         accounts: rebuiltAccounts,
                         creditCards: rebuiltCards,
                         invoices: rebuiltInvoices
+                    }
+                };
+            }),
+
+            // Budgets Actions
+            addBudget: (budget) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                const newBudget = { ...budget, id: Math.random().toString(36).substr(2, 9) };
+                return {
+                    [key]: {
+                        ...state[key],
+                        budgets: [...state[key].budgets, newBudget]
+                    }
+                };
+            }),
+
+            updateBudget: (id, updated) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                return {
+                    [key]: {
+                        ...state[key],
+                        budgets: state[key].budgets.map(b => b.id === id ? { ...b, ...updated } : b)
+                    }
+                };
+            }),
+
+            deleteBudget: (id) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                return {
+                    [key]: {
+                        ...state[key],
+                        budgets: state[key].budgets.filter(b => b.id !== id)
+                    }
+                };
+            }),
+
+            // Goals Actions
+            addGoal: (goal) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                const newGoal = {
+                    ...goal,
+                    id: Math.random().toString(36).substr(2, 9),
+                    currentValue: goal.currentValue || 0
+                };
+                return {
+                    [key]: {
+                        ...state[key],
+                        goals: [...state[key].goals, newGoal]
+                    }
+                };
+            }),
+
+            updateGoal: (id, updated) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                return {
+                    [key]: {
+                        ...state[key],
+                        goals: state[key].goals.map(g => g.id === id ? { ...g, ...updated } : g)
+                    }
+                };
+            }),
+
+            deleteGoal: (id) => set((state) => {
+                const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
+                return {
+                    [key]: {
+                        ...state[key],
+                        goals: state[key].goals.filter(g => g.id !== id)
                     }
                 };
             }),

@@ -588,6 +588,152 @@ body {
     background: rgba(239, 68, 68, 0.1);
 }
 
+/* Financial Card Components */
+.sys-fin-card {
+    background: var(--sys-card-bg);
+    border-radius: var(--sys-radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sys-fin-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.sys-fin-card-glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.sys-card-type-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.sys-card-institution {
+    font-size: 12px;
+    color: var(--sys-text-secondary);
+    font-weight: 500;
+}
+
+.sys-card-balance-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--sys-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 2px;
+}
+
+.sys-card-actions-row {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--sys-border);
+}
+
+/* Credit Card Visual */
+.sys-credit-card-visual {
+    height: 180px;
+    border-radius: 18px;
+    padding: 24px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.sys-credit-card-visual:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.sys-credit-card-visual::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+}
+
+.sys-card-chip {
+    width: 40px;
+    height: 30px;
+    background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 100%);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.sys-card-chip::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 2px;
+}
+
+.sys-card-number-hidden {
+    display: flex;
+    gap: 12px;
+    font-size: 18px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+.sys-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.sys-badge-blue {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--sys-blue);
+}
+
+.sys-badge-green {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--sys-green);
+}
+
+.sys-badge-red {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--sys-red);
+}
+
+.sys-badge-yellow {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--sys-yellow);
+}
+
 /* Sidebar Custom Override */
 .sidebar {
     background-color: rgba(255, 255, 255, 0.8) !important;
@@ -609,4 +755,42 @@ body {
 .nav-item:hover:not(.active) {
     background-color: rgba(59, 130, 246, 0.05) !important;
     color: var(--sys-blue) !important;
+}
+
+/* Utility Colors */
+.bg-red {
+    background-color: var(--sys-red) !important;
+}
+
+.bg-green {
+    background-color: var(--sys-green) !important;
+}
+
+.bg-blue {
+    background-color: var(--sys-blue) !important;
+}
+
+.bg-yellow {
+    background-color: var(--sys-yellow) !important;
+}
+
+.color-red {
+    color: var(--sys-red) !important;
+}
+
+.color-green {
+    color: var(--sys-green) !important;
+}
+
+.color-blue {
+    color: var(--sys-blue) !important;
+}
+
+.color-yellow {
+    color: var(--sys-yellow) !important;
+}
+
+.border-green-glow {
+    border-color: rgba(52, 211, 153, 0.5) !important;
+    box-shadow: 0 0 15px rgba(52, 211, 153, 0.15);
 }

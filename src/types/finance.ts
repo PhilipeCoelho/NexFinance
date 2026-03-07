@@ -45,6 +45,8 @@ export interface Invoice {
 export interface CreditCard {
     id: string;
     name: string;
+    institution?: string;
+    institutionId?: string;
     limitTotal: number;
     limitAvailable: number;
     closingDay: number;
