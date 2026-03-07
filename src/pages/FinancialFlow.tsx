@@ -17,7 +17,8 @@ import { ptBR } from 'date-fns/locale';
 
 const FinancialFlow: React.FC = () => {
     const data = useCurrentData();
-    const { settings } = useFinanceStore();
+    const { settings, referenceMonth } = useFinanceStore();
+    const [viewMode, setViewMode] = React.useState<'month' | 'full'>('month');
 
     // Helper robusto para evitar o RangeError em datas malformadas
     const safeParse = (dateStr: string) => {
@@ -27,29 +28,30 @@ const FinancialFlow: React.FC = () => {
     };
 
     const flowData = useMemo(() => {
-        if (!data) return { events: [], riskDate: null, currentBalance: 0 };
-        const result = FinancialEngine.generateFinancialFlow(data.transactions, data.accounts, 24);
-        const currentBalance = FinancialEngine.calculateRealLiquidity(data.accounts);
-        return { ...result, currentBalance };
-    }, [data]);
+        if (!data) return { events: [], riskDate: null, currentBalance: 0, startBalance: 0, endBalance: 0 };
 
-    // This function was inserted here based on the user's instruction.
-    // Note: The 'static' keyword is not valid for functions within a functional component.
-    // It has been removed to ensure syntactic correctness as per the instructions.
-    const getLisbonDate = (precision: 'month' | 'day' = 'day'): string => {
-        const d = new Date();
-        // sv-SE is one of the few locales that consistently returns YYYY-MM-DD
-        const formatter = new Intl.DateTimeFormat('sv-SE', {
-            timeZone: 'Europe/Lisbon',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
-        const formatted = formatter.format(d); // "2026-03-07"
+        if (viewMode === 'month') {
+            // Focar apenas no mês selecionado
+            const monthResult = FinancialEngine.getMonthFlow(data.transactions, data.accounts, referenceMonth);
 
-        if (precision === 'month') return formatted.slice(0, 7);
-        return formatted;
-    };
+            // Detectar risco global (mesmo se estivermos no modo mês)
+            const globalResult = FinancialEngine.generateFinancialFlow(data.transactions, data.accounts, 24);
+            const currentBalance = FinancialEngine.calculateRealLiquidity(data.accounts);
+
+            return {
+                events: monthResult.events,
+                riskDate: globalResult.riskDate,
+                currentBalance,
+                startBalance: monthResult.startBalance,
+                endBalance: monthResult.endBalance
+            };
+        } else {
+            // Mostrar fluxo contínuo de 24 meses
+            const fullResult = FinancialEngine.generateFinancialFlow(data.transactions, data.accounts, 24);
+            const currentBalance = FinancialEngine.calculateRealLiquidity(data.accounts);
+            return { ...fullResult, currentBalance, startBalance: currentBalance, endBalance: fullResult.events[fullResult.events.length - 1]?.resultingBalance || currentBalance };
+        }
+    }, [data, referenceMonth, viewMode]);
 
     const formatCurrency = (value: number) => {
         const val = Number(value) || 0;
@@ -59,21 +61,39 @@ const FinancialFlow: React.FC = () => {
         }).format(val);
     };
 
-    const formatDate = (dateStr: string) => {
-        return format(parseISO(dateStr), "dd 'de' MMMM", { locale: ptBR });
-    };
-
     if (!data) return null;
+
+    const monthLabel = format(parseISO(referenceMonth + '-01'), 'MMMM yyyy', { locale: ptBR });
 
     return (
         <PageLayout title="Fluxo Financeiro Contínuo">
             <div className="flow-container">
+                {/* Mode Selector Toggle */}
+                <div className="flow-mode-toggle sys-card">
+                    <button
+                        className={`toggle-btn ${viewMode === 'month' ? 'active' : ''}`}
+                        onClick={() => setViewMode('month')}
+                    >
+                        Fluxo de {monthLabel}
+                    </button>
+                    <button
+                        className={`toggle-btn ${viewMode === 'full' ? 'active' : ''}`}
+                        onClick={() => setViewMode('full')}
+                    >
+                        Projeção (2 Anos)
+                    </button>
+                </div>
+
                 {/* Header Summary Cards */}
                 <div className="flow-summary-grid">
                     <div className="sys-card flow-status-card current">
                         <div className="flow-status-info">
-                            <span className="flow-status-label">Liquidez Atual</span>
-                            <span className="flow-status-value">{formatCurrency(flowData.currentBalance)}</span>
+                            <span className="flow-status-label">
+                                {viewMode === 'month' ? `Expectativa Final ${monthLabel.split(' ')[0]}` : 'Liquidez Atual'}
+                            </span>
+                            <span className="flow-status-value">
+                                {formatCurrency(viewMode === 'month' ? flowData.endBalance : flowData.currentBalance)}
+                            </span>
                         </div>
                         <div className="flow-status-icon current">
                             <Wallet size={24} />
@@ -84,7 +104,11 @@ const FinancialFlow: React.FC = () => {
                         <div className="sys-card flow-status-card risk animate-pulse">
                             <div className="flow-status-info">
                                 <span className="flow-status-label">Alerta de Risco</span>
-                                <span className="flow-status-value">Saldo negativo em {format(safeParse(flowData.riskDate), 'dd/MM/yyyy')}</span>
+                                <span className="flow-status-value">
+                                    {flowData.riskDate.startsWith(referenceMonth)
+                                        ? "Saldo negativo previsto para ESTE MÊS!"
+                                        : `Saldo negativo em ${format(safeParse(flowData.riskDate), 'dd/MM/yyyy')}`}
+                                </span>
                             </div>
                             <div className="flow-status-icon risk">
                                 <AlertTriangle size={24} />
@@ -110,15 +134,16 @@ const FinancialFlow: React.FC = () => {
                     {flowData.events.length === 0 ? (
                         <div className="empty-flow">
                             <Activity size={48} opacity={0.2} />
-                            <p>Nenhuma transação prevista para os próximos meses.</p>
+                            <p>Nenhuma transação prevista para o período selecionado.</p>
                         </div>
                     ) : (
-                        flowData.events.map((event, index) => {
+                        flowData.events.map((event: any, index: number) => {
                             const isNegative = event.resultingBalance < 0;
                             const isIncome = event.type === 'income';
+                            const isPast = event.status === 'confirmed';
 
                             return (
-                                <div key={event.id} className={`timeline-item ${isNegative ? 'is-risk' : ''} fade-in`} style={{ animationDelay: `${index * 0.05}s` }}>
+                                <div key={event.id} className={`timeline-item ${isNegative ? 'is-risk' : ''} ${isPast ? 'is-past' : ''} fade-in`} style={{ animationDelay: `${index * 0.05}s` }}>
                                     <div className="timeline-date">
                                         <span className="date-day">{(event.date || '').split('-')[2] || '01'}</span>
                                         <span className="date-month">{format(safeParse(event.date), 'MMM', { locale: ptBR }).toUpperCase()}</span>
@@ -131,7 +156,10 @@ const FinancialFlow: React.FC = () => {
                                     <div className="timeline-content sys-card">
                                         <div className="timeline-main">
                                             <div className="timeline-info">
-                                                <h4 className="timeline-title">{event.description}</h4>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="timeline-title">{event.description}</h4>
+                                                    {isPast && <span className="status-badge-mini">OK</span>}
+                                                </div>
                                                 <span className="timeline-category">
                                                     {(data?.categories || []).find(c => c.id === event.category)?.name || 'Outros'}
                                                 </span>
@@ -169,6 +197,33 @@ const FinancialFlow: React.FC = () => {
                     padding-bottom: 4rem;
                 }
 
+                .flow-mode-toggle {
+                    display: flex;
+                    padding: 6px;
+                    gap: 6px;
+                    background: var(--bg-secondary);
+                    border-radius: 12px;
+                    align-self: flex-start;
+                }
+
+                .toggle-btn {
+                    padding: 8px 16px;
+                    border: none;
+                    border-radius: 8px;
+                    font-size: 0.875rem;
+                    font-weight: 700;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    background: transparent;
+                    color: var(--text-secondary);
+                }
+
+                .toggle-btn.active {
+                    background: white;
+                    color: var(--sys-blue);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                }
+
                 .flow-summary-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -197,7 +252,7 @@ const FinancialFlow: React.FC = () => {
                 }
 
                 .flow-status-value {
-                    font-size: 1.5rem;
+                    font-size: 1.75rem;
                     font-weight: 800;
                     letter-spacing: -0.02em;
                 }
@@ -217,6 +272,23 @@ const FinancialFlow: React.FC = () => {
 
                 .risk .flow-status-value { color: #ef4444; }
                 .healthy .flow-status-value { color: #10b981; }
+
+                /* Past transactions style */
+                .is-past {
+                    opacity: 0.7;
+                }
+                .is-past .timeline-content {
+                    background: #f8fafc;
+                }
+                .status-badge-mini {
+                    font-size: 9px;
+                    font-weight: 800;
+                    background: #e2e8f0;
+                    color: #64748b;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    text-transform: uppercase;
+                }
 
                 /* Timeline Styles */
                 .timeline-wrapper {
@@ -326,6 +398,8 @@ const FinancialFlow: React.FC = () => {
                 }
 
                 @media (max-width: 640px) {
+                    .flow-mode-toggle { align-self: stretch; }
+                    .toggle-btn { flex: 1; font-size: 0.75rem; padding: 10px 8px; }
                     .timeline-wrapper { padding-left: 20px; }
                     .timeline-line { left: 40px; }
                     .timeline-date { position: static; width: auto; flex-direction: row; gap: 8px; align-items: baseline; margin-bottom: 10px; }

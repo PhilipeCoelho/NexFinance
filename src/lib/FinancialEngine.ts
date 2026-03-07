@@ -174,6 +174,53 @@ export class FinancialEngine {
     }
 
     /**
+     * Gera o fluxo detalhado de um mês específico, incluindo transações já confirmadas.
+     */
+    static getMonthFlow(
+        transactions: Transaction[],
+        accounts: Account[],
+        targetMonth: string
+    ) {
+        const startBalance = this.calculateProjectedInitialBalance(transactions, accounts, targetMonth);
+        const events: any[] = [];
+        let runningBalance = startBalance;
+
+        const monthlyTxs = transactions.filter(t =>
+            !t.isIgnored && this.isTransactionInMonth(t, targetMonth)
+        );
+
+        // Transformar transações em eventos de timeline
+        const allEvents = monthlyTxs.map(t => {
+            const dateParts = t.date.split('-');
+            const rawDay = dateParts[2] || '01';
+            const day = String(parseInt(rawDay)).padStart(2, '0');
+
+            return {
+                id: `${t.id}-${targetMonth}`,
+                originalId: t.id,
+                date: `${targetMonth}-${day}`,
+                description: t.description,
+                value: Number(t.value) || 0,
+                type: t.type,
+                category: t.categoryId,
+                status: this.getEffectiveTransactionStatus(t, targetMonth)
+            };
+        });
+
+        // Ordenar por data
+        allEvents.sort((a, b) => a.date.localeCompare(b.date));
+
+        // Calcular saldo corrido
+        allEvents.forEach(evt => {
+            const modifier = evt.type === 'income' ? 1 : (evt.type === 'expense' ? -1 : 0);
+            runningBalance += (evt.value * modifier);
+            events.push({ ...evt, resultingBalance: runningBalance });
+        });
+
+        return { events, startBalance, endBalance: runningBalance };
+    }
+
+    /**
      * Gera um fluxo financeiro cronológico baseado na liquidez atual e transações futuras.
      */
     static generateFinancialFlow(
