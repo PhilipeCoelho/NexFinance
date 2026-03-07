@@ -592,6 +592,52 @@ export const useFinanceStore = create<FinanceState>()(
     )
 );
 
+// Dynamic Visibility Engine
+export const getVisibleTransactions = (
+    transactions: Transaction[],
+    options: {
+        viewMonth: string;
+        searchTerm?: string;
+        type?: 'all' | 'expense' | 'income' | 'transfer';
+        showIgnored?: boolean;
+        categoryId?: string;
+        accountId?: string;
+    }
+) => {
+    const { viewMonth, searchTerm = '', type = 'all', showIgnored = false, categoryId, accountId } = options;
+
+    const filtered = transactions.filter(t => {
+        // 1. Month Filter (using central engine logic)
+        if (!FinancialEngine.isTransactionInMonth(t, viewMonth)) return false;
+
+        // 2. Type Filter
+        if (type !== 'all' && t.type !== type) return false;
+
+        // 3. Search Term Filter
+        if (searchTerm && !(t.description || '').toLowerCase().includes(searchTerm.toLowerCase())) return false;
+
+        // 4. Category Filter
+        if (categoryId && t.categoryId !== categoryId) return false;
+
+        // 5. Account Filter
+        if (accountId && t.accountId !== accountId) return false;
+
+        return true;
+    });
+
+    // Separate visible from hidden (ignored)
+    const visible = filtered.filter(t => showIgnored || !t.isIgnored);
+    const hidden = filtered.filter(t => !showIgnored && t.isIgnored);
+
+    const hiddenValue = hidden.reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+
+    return {
+        transactions: visible,
+        hiddenCount: hidden.length,
+        hiddenValue
+    };
+};
+
 export const useCurrentData = () => {
     const { currentContext, personalData, businessData } = useFinanceStore();
     return currentContext === 'personal' ? personalData : businessData;

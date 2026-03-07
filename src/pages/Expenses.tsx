@@ -24,7 +24,7 @@ import {
     TrendingUp,
     TrendingDown
 } from 'lucide-react';
-import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
+import { useFinanceStore, useCurrentData, getVisibleTransactions } from '@/hooks/use-store';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
@@ -70,43 +70,15 @@ const Expenses: React.FC = () => {
         setTransactionToDelete(null);
     };
 
-    const isTransactionInMonth = (t: any, monthStr: string) => {
-        if (t.date.startsWith(monthStr)) {
-            if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
-            return true;
-        }
-        if (t.isFixed || t.isRecurring) {
-            if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
-            const tDate = new Date(t.date + 'T12:00:00');
-            const [y, m] = monthStr.split('-').map(Number);
-            const targetDate = new Date(y, m - 1, 10);
-            if (targetDate < tDate) return false;
-            if (t.isFixed) return true;
-            if (t.isRecurring && t.recurrence) {
-                const diffMonths = (targetDate.getFullYear() - tDate.getFullYear()) * 12 + (targetDate.getMonth() - tDate.getMonth());
-                return diffMonths >= 0 && diffMonths < (t.recurrence.installmentsCount || 1);
-            }
-        }
-        return false;
-    };
-
-    const getInstallmentInfo = (t: any, monthStr: string) => {
-        if (!t.isRecurring || !t.recurrence?.installmentsCount) return null;
-        const tDate = new Date(t.date + 'T12:00:00');
-        const [y, m] = monthStr.split('-').map(Number);
-        const targetDate = new Date(y, m - 1, 10);
-        const diffMonths = (targetDate.getFullYear() - tDate.getFullYear()) * 12 + (targetDate.getMonth() - tDate.getMonth());
-        return `${diffMonths + 1}/${t.recurrence.installmentsCount}`;
-    };
-
-    const filteredExpenses = useMemo(() => {
-        if (!data?.transactions) return [];
-        return data.transactions.filter(t =>
-            t.type === 'expense' &&
-            isTransactionInMonth(t, viewMonth) &&
-            (t.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [data, searchTerm, viewMonth]);
+    const { transactions: visibleExpenses, hiddenCount, hiddenValue } = useMemo(() => {
+        if (!data?.transactions) return { transactions: [], hiddenCount: 0, hiddenValue: 0 };
+        return getVisibleTransactions(data.transactions, {
+            viewMonth,
+            searchTerm,
+            type: 'expense',
+            showIgnored
+        });
+    }, [data, searchTerm, viewMonth, showIgnored]);
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -117,7 +89,7 @@ const Expenses: React.FC = () => {
     };
 
     const sortedExpenses = useMemo(() => {
-        let sortableItems = [...filteredExpenses];
+        let sortableItems = [...visibleExpenses];
         if (sortConfig !== null) {
             sortableItems.sort((a, b) => {
                 if (sortConfig.key !== 'isIgnored') {
@@ -142,27 +114,19 @@ const Expenses: React.FC = () => {
             });
         }
         return sortableItems;
-    }, [filteredExpenses, sortConfig, data]);
+    }, [visibleExpenses, sortConfig, data]);
 
-    const finalDisplayExpenses = useMemo(() => {
-        if (showIgnored) return sortedExpenses;
-        return sortedExpenses.filter(e => !e.isIgnored);
-    }, [sortedExpenses, showIgnored]);
-
-    const ignoredCount = useMemo(() => {
-        return sortedExpenses.filter(e => e.isIgnored).length;
-    }, [sortedExpenses]);
+    const stats = useMemo(() => {
+        const pending = visibleExpenses.filter(t => t.status !== 'confirmed').reduce((acc, t) => acc + t.value, 0);
+        const paid = visibleExpenses.filter(t => t.status === 'confirmed').reduce((acc, t) => acc + t.value, 0);
+        return { pending, paid, total: pending + paid };
+    }, [visibleExpenses]);
 
     const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) return <ChevronDown size={14} opacity={0.2} style={{ marginLeft: '4px' }} />;
         return sortConfig.direction === 'asc' ? <ArrowUp size={14} style={{ marginLeft: '4px', color: 'var(--mobills-red)' }} /> : <ArrowDown size={14} style={{ marginLeft: '4px', color: 'var(--mobills-red)' }} />;
     };
 
-    const stats = useMemo(() => {
-        const pending = filteredExpenses.filter(t => t.status !== 'confirmed').reduce((acc, t) => acc + t.value, 0);
-        const paid = filteredExpenses.filter(t => t.status === 'confirmed').reduce((acc, t) => acc + t.value, 0);
-        return { pending, paid, total: pending + paid };
-    }, [filteredExpenses]);
 
     const currentMonthDate = new Date(viewMonth + '-01T12:00:00');
 
@@ -208,6 +172,11 @@ const Expenses: React.FC = () => {
                 <div className="sys-summary-info">
                     <span className="sys-summary-label">Total do Mês</span>
                     <span className="sys-summary-value color-red">{formatCurrency(stats.total)}</span>
+                    {hiddenValue > 0 && (
+                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginTop: '2px', display: 'block' }}>
+                            + {formatCurrency(hiddenValue)} ocultos
+                        </span>
+                    )}
                 </div>
                 <div className="sys-summary-icon-box bg-red"><TrendingDown size={24} /></div>
             </div>
@@ -243,7 +212,7 @@ const Expenses: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {finalDisplayExpenses.map(t => (
+                        {sortedExpenses.map(t => (
                             <tr key={t.id} style={{ opacity: t.isIgnored ? 0.5 : 1 }}>
                                 <td>
                                     <div style={{ position: 'relative', display: 'inline-flex' }}>
@@ -293,7 +262,7 @@ const Expenses: React.FC = () => {
                     </tbody>
                 </table>
 
-                {finalDisplayExpenses.length === 0 && (
+                {sortedExpenses.length === 0 && (
                     <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
                         Nenhuma despesa encontrada no período.
                     </div>

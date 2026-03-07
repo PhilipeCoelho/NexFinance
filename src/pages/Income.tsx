@@ -24,7 +24,7 @@ import {
     TrendingUp,
     TrendingDown
 } from 'lucide-react';
-import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
+import { useFinanceStore, useCurrentData, getVisibleTransactions } from '@/hooks/use-store';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
@@ -70,43 +70,15 @@ const Income: React.FC = () => {
         setTransactionToDelete(null);
     };
 
-    const isTransactionInMonth = (t: any, monthStr: string) => {
-        if (t.date.startsWith(monthStr)) {
-            if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
-            return true;
-        }
-        if (t.isFixed || t.isRecurring) {
-            if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
-            const tDate = new Date(t.date + 'T12:00:00');
-            const [y, m] = monthStr.split('-').map(Number);
-            const targetDate = new Date(y, m - 1, 10);
-            if (targetDate < tDate) return false;
-            if (t.isFixed) return true;
-            if (t.isRecurring && t.recurrence) {
-                const diffMonths = (targetDate.getFullYear() - tDate.getFullYear()) * 12 + (targetDate.getMonth() - tDate.getMonth());
-                return diffMonths >= 0 && diffMonths < (t.recurrence.installmentsCount || 1);
-            }
-        }
-        return false;
-    };
-
-    const getInstallmentInfo = (t: any, monthStr: string) => {
-        if (!t.isRecurring || !t.recurrence?.installmentsCount) return null;
-        const tDate = new Date(t.date + 'T12:00:00');
-        const [y, m] = monthStr.split('-').map(Number);
-        const targetDate = new Date(y, m - 1, 10);
-        const diffMonths = (targetDate.getFullYear() - tDate.getFullYear()) * 12 + (targetDate.getMonth() - tDate.getMonth());
-        return `${diffMonths + 1}/${t.recurrence.installmentsCount}`;
-    };
-
-    const filteredIncome = useMemo(() => {
-        if (!data?.transactions) return [];
-        return data.transactions.filter(t =>
-            t.type === 'income' &&
-            isTransactionInMonth(t, viewMonth) &&
-            (t.description || '').toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [data, searchTerm, viewMonth]);
+    const { transactions: visibleIncome, hiddenCount, hiddenValue } = useMemo(() => {
+        if (!data?.transactions) return { transactions: [], hiddenCount: 0, hiddenValue: 0 };
+        return getVisibleTransactions(data.transactions, {
+            viewMonth,
+            searchTerm,
+            type: 'income',
+            showIgnored
+        });
+    }, [data, searchTerm, viewMonth, showIgnored]);
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -117,7 +89,7 @@ const Income: React.FC = () => {
     };
 
     const sortedIncome = useMemo(() => {
-        let sortableItems = [...filteredIncome];
+        let sortableItems = [...visibleIncome];
         if (sortConfig !== null) {
             sortableItems.sort((a, b) => {
                 if (sortConfig.key !== 'isIgnored') {
@@ -142,27 +114,19 @@ const Income: React.FC = () => {
             });
         }
         return sortableItems;
-    }, [filteredIncome, sortConfig, data]);
+    }, [visibleIncome, sortConfig, data]);
 
-    const finalDisplayIncome = useMemo(() => {
-        if (showIgnored) return sortedIncome;
-        return sortedIncome.filter(e => !e.isIgnored);
-    }, [sortedIncome, showIgnored]);
-
-    const ignoredCount = useMemo(() => {
-        return sortedIncome.filter(e => e.isIgnored).length;
-    }, [sortedIncome]);
+    const stats = useMemo(() => {
+        const pending = visibleIncome.filter(t => t.status !== 'confirmed').reduce((acc, t) => acc + t.value, 0);
+        const paid = visibleIncome.filter(t => t.status === 'confirmed').reduce((acc, t) => acc + t.value, 0);
+        return { pending, paid, total: pending + paid };
+    }, [visibleIncome]);
 
     const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) return <ChevronDown size={14} opacity={0.2} style={{ marginLeft: '4px' }} />;
         return sortConfig.direction === 'asc' ? <ArrowUp size={14} style={{ marginLeft: '4px', color: 'var(--mobills-green)' }} /> : <ArrowDown size={14} style={{ marginLeft: '4px', color: 'var(--mobills-green)' }} />;
     };
 
-    const stats = useMemo(() => {
-        const pending = filteredIncome.filter(t => t.status !== 'confirmed').reduce((acc, t) => acc + t.value, 0);
-        const paid = filteredIncome.filter(t => t.status === 'confirmed').reduce((acc, t) => acc + t.value, 0);
-        return { pending, paid, total: pending + paid };
-    }, [filteredIncome]);
 
     const currentMonthDate = new Date(viewMonth + '-01T12:00:00');
 
@@ -210,6 +174,11 @@ const Income: React.FC = () => {
                 <div className="sys-summary-info">
                     <span className="sys-summary-label">Total do Mês</span>
                     <span className="sys-summary-value color-green">{formatCurrency(stats.total)}</span>
+                    {hiddenValue > 0 && (
+                        <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginTop: '2px', display: 'block' }}>
+                            + {formatCurrency(hiddenValue)} ocultos
+                        </span>
+                    )}
                 </div>
                 <div className="sys-summary-icon-box bg-green"><TrendingUp size={24} /></div>
             </div>
@@ -245,7 +214,7 @@ const Income: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {finalDisplayIncome.map(t => (
+                        {sortedIncome.map(t => (
                             <tr key={t.id} style={{ opacity: t.isIgnored ? 0.5 : 1 }}>
                                 <td>
                                     <div style={{ position: 'relative', display: 'inline-flex' }}>
@@ -295,7 +264,7 @@ const Income: React.FC = () => {
                     </tbody>
                 </table>
 
-                {finalDisplayIncome.length === 0 && (
+                {sortedIncome.length === 0 && (
                     <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
                         Nenhuma receita encontrada no período.
                     </div>
