@@ -41,7 +41,7 @@ const Expenses: React.FC = () => {
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'asc' });
 
     const data = useCurrentData();
-    const { settings, updateTransaction, deleteTransaction, viewMonth, setViewMonth } = useFinanceStore();
+    const { settings, updateTransaction, deleteTransaction, referenceMonth, setReferenceMonth } = useFinanceStore();
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: settings.currency || 'EUR' }).format(value);
@@ -65,7 +65,7 @@ const Expenses: React.FC = () => {
 
     const confirmDelete = (scope: 'all' | 'single') => {
         if (transactionToDelete) {
-            deleteTransaction(transactionToDelete.id, scope, viewMonth);
+            deleteTransaction(transactionToDelete.id, scope, referenceMonth);
         }
         setShowDeletePrompt(false);
         setTransactionToDelete(null);
@@ -74,12 +74,12 @@ const Expenses: React.FC = () => {
     const { transactions: visibleExpenses, hiddenCount, hiddenValue } = useMemo(() => {
         if (!data?.transactions) return { transactions: [], hiddenCount: 0, hiddenValue: 0 };
         return getVisibleTransactions(data.transactions, {
-            viewMonth,
+            viewMonth: referenceMonth,
             searchTerm,
             type: 'expense',
             showIgnored
         });
-    }, [data, searchTerm, viewMonth, showIgnored]);
+    }, [data, searchTerm, referenceMonth, showIgnored]);
 
     const handleSort = (key: string) => {
         let direction: 'asc' | 'desc' = 'asc';
@@ -118,10 +118,10 @@ const Expenses: React.FC = () => {
     }, [visibleExpenses, sortConfig, data]);
 
     const stats = useMemo(() => {
-        const pending = visibleExpenses.filter(t => t.status !== 'confirmed').reduce((acc, t) => acc + t.value, 0);
-        const paid = visibleExpenses.filter(t => t.status === 'confirmed').reduce((acc, t) => acc + t.value, 0);
+        const pending = visibleExpenses.filter(t => FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) !== 'confirmed').reduce((acc, t) => acc + t.value, 0);
+        const paid = visibleExpenses.filter(t => FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
         return { pending, paid, total: pending + paid };
-    }, [visibleExpenses]);
+    }, [visibleExpenses, referenceMonth]);
 
     const getSortIcon = (key: string) => {
         if (!sortConfig || sortConfig.key !== key) return <ChevronDown size={14} opacity={0.2} style={{ marginLeft: '4px' }} />;
@@ -129,27 +129,19 @@ const Expenses: React.FC = () => {
     };
 
 
-    const currentMonthDate = new Date(viewMonth + '-01T12:00:00');
-
-    const changeMonth = (offset: number) => {
-        const [y, m] = viewMonth.split('-').map(Number);
-        const date = new Date(y, m - 1 + offset, 1);
-        setViewMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
+    const prevMonth = () => {
+        const [y, m] = referenceMonth.split('-').map(Number);
+        const date = new Date(y, m - 2, 1);
+        setReferenceMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
     };
 
-    const prevMonth = () => changeMonth(-1);
-    const nextMonth = () => changeMonth(1);
-
-    const getAdjustedDate = (dateStr: string, monthStr: string) => {
-        try {
-            const [y, m, d] = dateStr.split('-');
-            const [refY, refM] = monthStr.split('-');
-            if (dateStr.startsWith(monthStr)) return dateStr;
-            return `${refY}-${refM}-${d}`;
-        } catch (e) {
-            return dateStr;
-        }
+    const nextMonth = () => {
+        const [y, m] = referenceMonth.split('-').map(Number);
+        const date = new Date(y, m, 1);
+        setReferenceMonth(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`);
     };
+
+    // Removido getAdjustedDate local, usando FinancialEngine.getAdjustedDate
 
     if (!data) return null;
 
@@ -240,7 +232,7 @@ const Expenses: React.FC = () => {
                             <tr key={t.id} style={{ opacity: t.isIgnored ? 0.5 : 1 }}>
                                 <td>
                                     <div style={{ position: 'relative', display: 'inline-flex' }}>
-                                        {FinancialEngine.getEffectiveTransactionStatus(t, viewMonth) === 'confirmed' ? (
+                                        {FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? (
                                             <CheckCircle2 size={18} className="color-green" />
                                         ) : (
                                             <AlertCircle size={18} className="color-yellow" />
@@ -250,7 +242,7 @@ const Expenses: React.FC = () => {
                                     </div>
                                 </td>
                                 <td style={{ color: '#64748b', fontSize: '13px' }}>
-                                    {format(new Date(FinancialEngine.getAdjustedDate(t.date, viewMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
+                                    {format(new Date(FinancialEngine.getAdjustedDate(t.date, referenceMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
                                 </td>
                                 <td>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -274,11 +266,11 @@ const Expenses: React.FC = () => {
                                 </td>
                                 <td>
                                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                                        <button onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored }, 'single', viewMonth)} title={t.isIgnored ? "Considerar" : "Ignorar"} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                                        <button onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored }, 'single', referenceMonth)} title={t.isIgnored ? "Considerar" : "Ignorar"} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                                             {t.isIgnored ? <Eye size={16} color="var(--sys-blue)" /> : <EyeOff size={16} color="#94a3b8" />}
                                         </button>
-                                        <button onClick={() => updateTransaction(t.id, { status: FinancialEngine.getEffectiveTransactionStatus(t, viewMonth) === 'confirmed' ? 'forecast' : 'confirmed' }, (t.isFixed || t.isRecurring) ? 'single' : 'all', viewMonth)} title={FinancialEngine.getEffectiveTransactionStatus(t, viewMonth) === 'confirmed' ? "Marcar como pendente" : "Marcar como pago"} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                                            <Check size={16} color={FinancialEngine.getEffectiveTransactionStatus(t, viewMonth) === 'confirmed' ? '#10b981' : '#cbd5e1'} />
+                                        <button onClick={() => updateTransaction(t.id, { status: FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? 'forecast' : 'confirmed' }, (t.isFixed || t.isRecurring) ? 'single' : 'all', referenceMonth)} title={FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? "Marcar como pendente" : "Marcar como pago"} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                                            <Check size={16} color={FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? '#10b981' : '#cbd5e1'} />
                                         </button>
                                         <button onClick={() => handleEdit(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Edit3 size={16} color="#94a3b8" /></button>
                                         <button onClick={() => handleDeleteTrigger(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Trash2 size={16} color="#94a3b8" /></button>
@@ -301,7 +293,7 @@ const Expenses: React.FC = () => {
                 onClose={() => { setIsModalOpen(false); setExpenseToEdit(null); }}
                 editingTransaction={expenseToEdit}
                 forcedType="expense"
-                activeMonth={viewMonth}
+                activeMonth={referenceMonth}
             />
 
             {showDeletePrompt && (
