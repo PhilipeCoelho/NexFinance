@@ -121,8 +121,8 @@ export const useFinanceStore = create<FinanceState>()(
                 theme: 'light',
                 dashboardWidgets: DEFAULT_WIDGETS,
             },
-            referenceMonth: new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7),
-            viewMonth: new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7),
+            referenceMonth: FinancialEngine.getLisbonDate('month'),
+            viewMonth: FinancialEngine.getLisbonDate('month'),
 
             isLoading: false,
             // Auth Initial State
