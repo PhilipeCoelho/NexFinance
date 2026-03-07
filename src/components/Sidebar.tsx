@@ -13,6 +13,8 @@ import {
   Briefcase,
   User,
   CreditCard,
+  MoreVertical,
+  Activity,
   LogOut
 } from 'lucide-react';
 import { useFinanceStore } from '@/hooks/use-store';
@@ -29,6 +31,7 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', path: '/dashboard' },
+    { icon: Activity, label: 'Fluxo Financeiro', id: 'financial-flow', path: '/financial-flow' },
     { icon: Receipt, label: 'Transações', id: 'transactions', path: '/transactions' },
     { icon: TrendingUp, label: 'Receitas', id: 'income', path: '/income' },
     { icon: TrendingDown, label: 'Despesas', id: 'expenses', path: '/expenses' },

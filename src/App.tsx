@@ -11,6 +11,7 @@ import Planning from '@/pages/Planning';
 import Categories from '@/pages/Categories';
 import Settings from '@/pages/Settings';
 import Migration from '@/pages/Migration';
+import FinancialFlow from '@/pages/FinancialFlow';
 import Login from '@/pages/Login';
 import MobileNav from '@/components/MobileNav';
 import { useFinanceStore } from '@/hooks/use-store';
@@ -75,6 +76,7 @@ const App: React.FC = () => {
                         <Routes>
                             <Route path="/" element={<Navigate to="/dashboard" replace />} />
                             <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/financial-flow" element={<FinancialFlow />} />
                             <Route path="/transactions" element={<Transactions />} />
                             <Route path="/income" element={<Income />} />
                             <Route path="/expenses" element={<Expenses />} />

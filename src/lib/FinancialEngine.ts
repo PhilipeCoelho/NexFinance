@@ -156,6 +156,83 @@ export class FinancialEngine {
     }
 
     /**
+     * Gera um fluxo financeiro cronológico baseado na liquidez atual e transações futuras.
+     */
+    static generateFinancialFlow(
+        transactions: Transaction[],
+        accounts: Account[],
+        horizonMonths: number = 12
+    ): { events: any[], riskDate: string | null } {
+        const startBalance = this.calculateRealLiquidity(accounts);
+        const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
+        const currentMonthStr = today.toISOString().slice(0, 7);
+
+        const events: any[] = [];
+        let runningBalance = startBalance;
+        let riskDate: string | null = null;
+
+        // 1. Identificar transações pendentes do mês atual e todas dos meses futuros
+        const futureMonths: string[] = [];
+        for (let i = 0; i < horizonMonths; i++) {
+            const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+            futureMonths.push(d.toISOString().slice(0, 7));
+        }
+
+        const allPotentialEvents: any[] = [];
+
+        transactions.forEach(t => {
+            if (t.isIgnored) return;
+
+            futureMonths.forEach(month => {
+                if (this.isTransactionInMonth(t, month)) {
+                    const status = this.getEffectiveTransactionStatus(t, month);
+
+                    // Apenas transações que ainda não impactaram o saldo real (forecast)
+                    if (status === 'forecast') {
+                        const day = t.date.split('-')[2] || '01';
+                        const eventDate = `${month}-${day}`;
+
+                        // Se for no mês atual, só incluir se a data for >= hoje
+                        if (month === currentMonthStr && eventDate < today.toISOString().slice(0, 10)) {
+                            return;
+                        }
+
+                        allPotentialEvents.push({
+                            id: `${t.id}-${month}`,
+                            originalId: t.id,
+                            date: eventDate,
+                            description: t.description,
+                            value: Number(t.value),
+                            type: t.type,
+                            category: t.categoryId,
+                            status: 'forecast'
+                        });
+                    }
+                }
+            });
+        });
+
+        // Ordenar cronologicamente
+        allPotentialEvents.sort((a, b) => a.date.localeCompare(b.date));
+
+        // Aplicar eventos e calcular saldo resultante
+        allPotentialEvents.forEach(event => {
+            const modifier = event.type === 'income' ? 1 : (event.type === 'expense' ? -1 : 0);
+            runningBalance += (event.value * modifier);
+
+            events.push({
+                ...event,
+                resultingBalance: runningBalance
+            });
+
+            if (runningBalance < 0 && !riskDate) {
+                riskDate = event.date;
+            }
+        });
+
+        return { events, riskDate };
+    }
+    /**
      * Verifica se uma transação (normal, fixa ou recorrente) está ativa em um mês específico.
      */
     static isTransactionInMonth(t: Transaction, monthStr: string): boolean {
