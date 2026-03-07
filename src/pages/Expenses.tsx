@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
 import PageLayout from '@/components/PageLayout';
+import { FinancialEngine } from '@/lib/FinancialEngine';
 
 const Expenses: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -239,7 +240,7 @@ const Expenses: React.FC = () => {
                             <tr key={t.id} style={{ opacity: t.isIgnored ? 0.5 : 1 }}>
                                 <td>
                                     <div style={{ position: 'relative', display: 'inline-flex' }}>
-                                        {t.status === 'confirmed' ? (
+                                        {FinancialEngine.getEffectiveTransactionStatus(t, viewMonth) === 'confirmed' ? (
                                             <CheckCircle2 size={18} className="color-green" />
                                         ) : (
                                             <AlertCircle size={18} className="color-yellow" />
@@ -249,7 +250,7 @@ const Expenses: React.FC = () => {
                                     </div>
                                 </td>
                                 <td style={{ color: '#64748b', fontSize: '13px' }}>
-                                    {format(new Date(getAdjustedDate(t.date, viewMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
+                                    {format(new Date(FinancialEngine.getAdjustedDate(t.date, viewMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
                                 </td>
                                 <td>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -267,7 +268,7 @@ const Expenses: React.FC = () => {
                                     {data.accounts.find(a => a.id === t.accountId)?.name || 'Carteira'}
                                 </td>
                                 <td style={{ textAlign: 'right' }}>
-                                    <span className="sys-table-val color-red">
+                                    <span className={`sys-table-val ${t.type === 'income' ? 'color-green' : 'color-red'}`}>
                                         {formatCurrency(t.value)}
                                     </span>
                                 </td>

@@ -384,4 +384,19 @@ export class FinancialEngine {
 
         return runningBalance;
     }
+
+    /**
+     * Ajusta visualmente a data de uma transação fixa/recorrente para o mês em visualização.
+     */
+    static getAdjustedDate(dateStr: string, monthStr: string): string {
+        try {
+            if (!dateStr || !monthStr) return dateStr;
+            const day = dateStr.split('-')[2] || '01';
+            const [refY, refM] = monthStr.split('-');
+            if (dateStr.startsWith(monthStr)) return dateStr;
+            return `${refY}-${refM}-${day}`;
+        } catch (e) {
+            return dateStr;
+        }
+    }
 }
