@@ -170,11 +170,13 @@ const Expenses: React.FC = () => {
             </div>
             <div className="sys-card sys-summary-item">
                 <div className="sys-summary-info">
-                    <span className="sys-summary-label">Total do Mês</span>
+                    <span className="sys-summary-label">
+                        {showIgnored ? 'Total (Incluindo Ignoradas)' : 'Total do Mês'}
+                    </span>
                     <span className="sys-summary-value color-red">{formatCurrency(stats.total)}</span>
-                    {hiddenValue > 0 && (
+                    {!showIgnored && hiddenValue > 0 && (
                         <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginTop: '2px', display: 'block' }}>
-                            + {formatCurrency(hiddenValue)} ocultos
+                            + {formatCurrency(hiddenValue)} ignorados
                         </span>
                     )}
                 </div>
@@ -186,7 +188,28 @@ const Expenses: React.FC = () => {
     return (
         <PageLayout title="Despesas" summaryPanel={summaryPanel}>
             <div className="sys-card">
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                            onClick={() => setShowIgnored(!showIgnored)}
+                            className={`sys-btn-minimal ${showIgnored ? 'active' : ''}`}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 12px',
+                                backgroundColor: showIgnored ? '#f1f5f9' : 'transparent',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                fontSize: '13px',
+                                cursor: 'pointer',
+                                color: showIgnored ? 'var(--sys-blue)' : '#64748b'
+                            }}
+                        >
+                            {showIgnored ? <Eye size={16} /> : <EyeOff size={16} />}
+                            {showIgnored ? 'Ocultar ignorados' : 'Ver ignorados'}
+                        </button>
+                    </div>
                     <div style={{ position: 'relative' }}>
                         <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 10 }} />
                         <input
@@ -250,6 +273,9 @@ const Expenses: React.FC = () => {
                                 </td>
                                 <td>
                                     <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                        <button onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored }, 'single', viewMonth)} title={t.isIgnored ? "Considerar" : "Ignorar"} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                                            {t.isIgnored ? <Eye size={16} color="var(--sys-blue)" /> : <EyeOff size={16} color="#94a3b8" />}
+                                        </button>
                                         <button onClick={() => updateTransaction(t.id, { status: t.status === 'confirmed' ? 'forecast' : 'confirmed' }, (t.isFixed || t.isRecurring) ? 'single' : 'all', viewMonth)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
                                             <Check size={16} color={t.status === 'confirmed' ? '#10b981' : '#cbd5e1'} />
                                         </button>

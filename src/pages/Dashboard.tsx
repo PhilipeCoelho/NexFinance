@@ -60,16 +60,18 @@ const Dashboard: React.FC = () => {
     return data.transactions.filter(t => FinancialEngine.isTransactionInMonth(t, referenceMonth));
   }, [data?.transactions, referenceMonth]);
 
-  const incomeTotal = useMemo(() => {
-    return monthlyTransactions
-      .filter(t => t.type === 'income' && !t.isIgnored)
-      .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+  const { incomeTotal, incomeIgnored } = useMemo(() => {
+    const incomes = monthlyTransactions.filter(t => t.type === 'income');
+    const total = incomes.filter(t => !t.isIgnored).reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+    const ignored = incomes.filter(t => t.isIgnored).reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+    return { incomeTotal: total, incomeIgnored: ignored };
   }, [monthlyTransactions]);
 
-  const expenseTotal = useMemo(() => {
-    return monthlyTransactions
-      .filter(t => t.type === 'expense' && !t.isIgnored)
-      .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+  const { expenseTotal, expenseIgnored } = useMemo(() => {
+    const expenses = monthlyTransactions.filter(t => t.type === 'expense');
+    const total = expenses.filter(t => !t.isIgnored).reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+    const ignored = expenses.filter(t => t.isIgnored).reduce((sum, t) => sum + (Number(t.value) || 0), 0);
+    return { expenseTotal: total, expenseIgnored: ignored };
   }, [monthlyTransactions]);
 
   const projectedInitialBalance = useMemo(() => {
@@ -191,7 +193,10 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--sys-green)' }}>{formatCurrency(incomeTotal)}</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Recebido em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>
+              Recebido em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
+              {incomeIgnored > 0 && ` · (+${formatCurrency(incomeIgnored)} ignorados)`}
+            </div>
           </div>
           <div className="sys-card" style={{ flex: 1, minWidth: '240px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -201,7 +206,10 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--sys-red)' }}>{formatCurrency(expenseTotal)}</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Gasto em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}</div>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>
+              Gasto em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
+              {expenseIgnored > 0 && ` · (+${formatCurrency(expenseIgnored)} ignorados)`}
+            </div>
           </div>
         </div>
 
