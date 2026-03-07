@@ -156,27 +156,21 @@ export class FinancialEngine {
     }
 
     /**
-     * Gera um fluxo financeiro cronológico baseado na liquidez atual e transações futuras.
-     */
-    /**
      * Gera uma data de hoje no fuso horário de Lisboa no formato YYYY-MM ou YYYY-MM-DD.
      */
     static getLisbonDate(precision: 'month' | 'day' = 'day'): string {
-        const now = new Date();
-        const formatter = new Intl.DateTimeFormat('pt-PT', {
-            timeZone: 'Europe/Lisbon',
-            year: precision === 'month' || precision === 'day' ? 'numeric' : undefined,
-            month: precision === 'month' || precision === 'day' ? '2-digit' : undefined,
-            day: precision === 'day' ? '2-digit' : undefined,
-        });
-
-        const parts = formatter.formatToParts(now);
-        const y = parts.find(p => p.type === 'year')?.value;
-        const m = parts.find(p => p.type === 'month')?.value;
-        const d = parts.find(p => p.type === 'day')?.value;
-
-        if (precision === 'month') return `${y}-${m}`;
-        return `${y}-${m}-${d}`;
+        const d = new Date();
+        try {
+            // en-CA is YYYY-MM-DD, very reliable for parsing
+            const formatted = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Lisbon' });
+            if (precision === 'month') return formatted.slice(0, 7);
+            return formatted;
+        } catch (e) {
+            // Fallback em caso de falha no engine de Intl (extremamente raro)
+            const fallback = d.toISOString();
+            if (precision === 'month') return fallback.slice(0, 7);
+            return fallback.slice(0, 10);
+        }
     }
 
     /**
@@ -185,7 +179,7 @@ export class FinancialEngine {
     static generateFinancialFlow(
         transactions: Transaction[],
         accounts: Account[],
-        horizonMonths: number = 12
+        horizonMonths: number = 24 // Fixado em 24 meses
     ): { events: any[], riskDate: string | null } {
         const startBalance = this.calculateRealLiquidity(accounts);
         const currentMonthStr = this.getLisbonDate('month');
@@ -198,9 +192,8 @@ export class FinancialEngine {
         const startDate = new Date();
         const futureMonths: string[] = [];
 
-        for (let i = 0; i < horizonMonths; i++) {
+        for (let i = 0; i < Math.min(horizonMonths, 60); i++) { // Max safety 5 years
             const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
-            // Formatar manualmente para evitar problemas de fuso horário no toISOString()
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
             futureMonths.push(`${y}-${m}`);
@@ -215,13 +208,12 @@ export class FinancialEngine {
                 if (this.isTransactionInMonth(t, month)) {
                     const status = this.getEffectiveTransactionStatus(t, month);
 
-                    // Apenas transações que ainda não impactaram o saldo real (forecast)
                     if (status === 'forecast') {
                         const dateParts = t.date.split('-');
                         const day = dateParts[2] || '01';
                         const eventDate = `${month}-${day}`;
 
-                        // Se for no mês atual, só incluir se a data for >= hoje
+                        // Ignorar datas passadas no mês atual
                         if (month === currentMonthStr && eventDate < todayStr) {
                             return;
                         }
@@ -231,7 +223,7 @@ export class FinancialEngine {
                             originalId: t.id,
                             date: eventDate,
                             description: t.description,
-                            value: Number(t.value),
+                            value: Number(t.value) || 0,
                             type: t.type,
                             category: t.categoryId,
                             status: 'forecast'
@@ -261,34 +253,40 @@ export class FinancialEngine {
 
         return { events, riskDate };
     }
+
     /**
      * Verifica se uma transação (normal, fixa ou recorrente) está ativa em um mês específico.
      */
     static isTransactionInMonth(t: Transaction, monthStr: string): boolean {
-        if (!t?.date || !monthStr) return false;
-        const [refYear, refMonth] = monthStr.split('-').map(Number);
+        if (!t?.date || !monthStr || monthStr.length < 7) return false;
 
-        const parts = t.date.split('-');
-        const tYear = parseInt(parts[0]);
-        const tMonth = parseInt(parts[1]);
+        try {
+            const [refYear, refMonth] = monthStr.split('-').map(Number);
+            const tDateParts = t.date.split('-');
+            const tYear = parseInt(tDateParts[0]);
+            const tMonth = parseInt(tDateParts[1]);
 
-        const diffMonths = (refYear - tYear) * 12 + (refMonth - tMonth) + 1;
+            if (isNaN(refYear) || isNaN(refMonth) || isNaN(tYear) || isNaN(tMonth)) return false;
 
-        if (diffMonths <= 0) return t.date.startsWith(monthStr);
-        if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
-        if (t.isFixed) return true;
-        if (!t.isRecurring) return t.date.startsWith(monthStr);
+            const diffMonths = (refYear - tYear) * 12 + (refMonth - tMonth) + 1;
 
-        if (t.recurrence?.installmentsCount) {
-            return diffMonths <= t.recurrence.installmentsCount;
+            if (diffMonths <= 0) return t.date.startsWith(monthStr);
+            if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
+            if (t.isFixed) return true;
+            if (!t.isRecurring) return t.date.startsWith(monthStr);
+
+            if (t.recurrence?.installmentsCount) {
+                return diffMonths <= t.recurrence.installmentsCount;
+            }
+
+            return true;
+        } catch (e) {
+            return false;
         }
-
-        return true;
     }
 
     /**
-     * Calcula o saldo inicial projetado para um mês específico, 
-     * carregando saldos de meses anteriores (continuidade financeira).
+     * Calcula o saldo inicial projetado para um mês específico.
      */
     static calculateProjectedInitialBalance(
         transactions: Transaction[],
@@ -304,8 +302,11 @@ export class FinancialEngine {
 
         let accumulatedProjection = 0;
         let currentIterMonth = todayMonth;
+        let safetyCounter = 0;
 
-        while (currentIterMonth < targetMonth) {
+        // Máximo de 120 iterações (10 anos) para evitar loop infinito
+        while (currentIterMonth < targetMonth && safetyCounter < 120) {
+            safetyCounter++;
             const monthlyTxs = transactions.filter(t => this.isTransactionInMonth(t, currentIterMonth));
 
             const monthlyPendingIncome = monthlyTxs
@@ -318,7 +319,12 @@ export class FinancialEngine {
 
             accumulatedProjection += (monthlyPendingIncome - monthlyPendingExpense);
 
-            let [y, m] = currentIterMonth.split('-').map(Number);
+            let parts = currentIterMonth.split('-').map(Number);
+            let y = parts[0];
+            let m = parts[1];
+
+            if (isNaN(y) || isNaN(m)) break; // Crash prevent
+
             m += 1;
             if (m > 12) {
                 m = 1;
