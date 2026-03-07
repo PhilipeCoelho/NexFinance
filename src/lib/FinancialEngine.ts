@@ -158,30 +158,58 @@ export class FinancialEngine {
     /**
      * Gera um fluxo financeiro cronológico baseado na liquidez atual e transações futuras.
      */
+    /**
+     * Gera uma data de hoje no fuso horário de Lisboa no formato YYYY-MM ou YYYY-MM-DD.
+     */
+    static getLisbonDate(precision: 'month' | 'day' = 'day'): string {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('pt-PT', {
+            timeZone: 'Europe/Lisbon',
+            year: precision === 'month' || precision === 'day' ? 'numeric' : undefined,
+            month: precision === 'month' || precision === 'day' ? '2-digit' : undefined,
+            day: precision === 'day' ? '2-digit' : undefined,
+        });
+
+        const parts = formatter.formatToParts(now);
+        const y = parts.find(p => p.type === 'year')?.value;
+        const m = parts.find(p => p.type === 'month')?.value;
+        const d = parts.find(p => p.type === 'day')?.value;
+
+        if (precision === 'month') return `${y}-${m}`;
+        return `${y}-${m}-${d}`;
+    }
+
+    /**
+     * Gera um fluxo financeiro cronológico baseado na liquidez atual e transações futuras.
+     */
     static generateFinancialFlow(
         transactions: Transaction[],
         accounts: Account[],
         horizonMonths: number = 12
     ): { events: any[], riskDate: string | null } {
         const startBalance = this.calculateRealLiquidity(accounts);
-        const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
-        const currentMonthStr = today.toISOString().slice(0, 7);
+        const currentMonthStr = this.getLisbonDate('month');
+        const todayStr = this.getLisbonDate('day');
 
         const events: any[] = [];
         let runningBalance = startBalance;
         let riskDate: string | null = null;
 
-        // 1. Identificar transações pendentes do mês atual e todas dos meses futuros
+        const startDate = new Date();
         const futureMonths: string[] = [];
+
         for (let i = 0; i < horizonMonths; i++) {
-            const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-            futureMonths.push(d.toISOString().slice(0, 7));
+            const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+            // Formatar manualmente para evitar problemas de fuso horário no toISOString()
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            futureMonths.push(`${y}-${m}`);
         }
 
         const allPotentialEvents: any[] = [];
 
         transactions.forEach(t => {
-            if (t.isIgnored) return;
+            if (!t || t.isIgnored || !t.date) return;
 
             futureMonths.forEach(month => {
                 if (this.isTransactionInMonth(t, month)) {
@@ -189,11 +217,12 @@ export class FinancialEngine {
 
                     // Apenas transações que ainda não impactaram o saldo real (forecast)
                     if (status === 'forecast') {
-                        const day = t.date.split('-')[2] || '01';
+                        const dateParts = t.date.split('-');
+                        const day = dateParts[2] || '01';
                         const eventDate = `${month}-${day}`;
 
                         // Se for no mês atual, só incluir se a data for >= hoje
-                        if (month === currentMonthStr && eventDate < today.toISOString().slice(0, 10)) {
+                        if (month === currentMonthStr && eventDate < todayStr) {
                             return;
                         }
 
@@ -267,7 +296,7 @@ export class FinancialEngine {
         targetMonth: string
     ): number {
         const currentRealLiquidity = this.calculateRealLiquidity(accounts);
-        const todayMonth = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().slice(0, 7);
+        const todayMonth = this.getLisbonDate('month');
 
         if (targetMonth <= todayMonth) {
             return currentRealLiquidity;
