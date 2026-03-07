@@ -19,12 +19,37 @@ const FinancialFlow: React.FC = () => {
     const data = useCurrentData();
     const { settings } = useFinanceStore();
 
+    // Helper robusto para evitar o RangeError em datas malformadas
+    const safeParse = (dateStr: string) => {
+        if (!dateStr) return new Date();
+        const d = parseISO(dateStr);
+        return isNaN(d.getTime()) ? new Date() : d;
+    };
+
     const flowData = useMemo(() => {
         if (!data) return { events: [], riskDate: null, currentBalance: 0 };
         const result = FinancialEngine.generateFinancialFlow(data.transactions, data.accounts, 24);
         const currentBalance = FinancialEngine.calculateRealLiquidity(data.accounts);
         return { ...result, currentBalance };
     }, [data]);
+
+    // This function was inserted here based on the user's instruction.
+    // Note: The 'static' keyword is not valid for functions within a functional component.
+    // It has been removed to ensure syntactic correctness as per the instructions.
+    const getLisbonDate = (precision: 'month' | 'day' = 'day'): string => {
+        const d = new Date();
+        // sv-SE is one of the few locales that consistently returns YYYY-MM-DD
+        const formatter = new Intl.DateTimeFormat('sv-SE', {
+            timeZone: 'Europe/Lisbon',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const formatted = formatter.format(d); // "2026-03-07"
+
+        if (precision === 'month') return formatted.slice(0, 7);
+        return formatted;
+    };
 
     const formatCurrency = (value: number) => {
         const val = Number(value) || 0;
@@ -59,7 +84,7 @@ const FinancialFlow: React.FC = () => {
                         <div className="sys-card flow-status-card risk animate-pulse">
                             <div className="flow-status-info">
                                 <span className="flow-status-label">Alerta de Risco</span>
-                                <span className="flow-status-value">Saldo negativo em {format(parseISO(flowData.riskDate), 'dd/MM/yyyy')}</span>
+                                <span className="flow-status-value">Saldo negativo em {format(safeParse(flowData.riskDate), 'dd/MM/yyyy')}</span>
                             </div>
                             <div className="flow-status-icon risk">
                                 <AlertTriangle size={24} />
@@ -95,8 +120,8 @@ const FinancialFlow: React.FC = () => {
                             return (
                                 <div key={event.id} className={`timeline-item ${isNegative ? 'is-risk' : ''} fade-in`} style={{ animationDelay: `${index * 0.05}s` }}>
                                     <div className="timeline-date">
-                                        <span className="date-day">{event.date.split('-')[2]}</span>
-                                        <span className="date-month">{format(parseISO(event.date), 'MMM', { locale: ptBR }).toUpperCase()}</span>
+                                        <span className="date-day">{(event.date || '').split('-')[2] || '01'}</span>
+                                        <span className="date-month">{format(safeParse(event.date), 'MMM', { locale: ptBR }).toUpperCase()}</span>
                                     </div>
 
                                     <div className="timeline-marker">

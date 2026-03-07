@@ -160,19 +160,17 @@ export class FinancialEngine {
      */
     static getLisbonDate(precision: 'month' | 'day' = 'day'): string {
         const d = new Date();
-        const formatter = new Intl.DateTimeFormat('pt-PT', {
+        // sv-SE is one of the few locales that consistently returns YYYY-MM-DD
+        const formatter = new Intl.DateTimeFormat('sv-SE', {
             timeZone: 'Europe/Lisbon',
             year: 'numeric',
             month: '2-digit',
             day: '2-digit'
         });
-        const parts = formatter.formatToParts(d);
-        const y = parts.find(p => p.type === 'year')?.value;
-        const m = parts.find(p => p.type === 'month')?.value;
-        const dd = parts.find(p => p.type === 'day')?.value;
+        const formatted = formatter.format(d); // "2026-03-07"
 
-        if (precision === 'month') return `${y}-${m}`;
-        return `${y}-${m}-${dd}`;
+        if (precision === 'month') return formatted.slice(0, 7);
+        return formatted;
     }
 
     /**
