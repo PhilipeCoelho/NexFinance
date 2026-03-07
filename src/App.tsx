@@ -18,6 +18,31 @@ import { useFinanceStore } from '@/hooks/use-store';
 import { supabase } from '@/services/supabase';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
+    constructor(props: any) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+    static getDerivedStateFromError(error: any) {
+        return { hasError: true, error };
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{ padding: '40px', textAlign: 'center', background: '#fef2f2', color: '#b91c1c', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '16px' }}>Oops! Algo correu mal.</h1>
+                    <pre style={{ background: '#000', color: '#0f0', padding: '20px', borderRadius: '12px', textAlign: 'left', maxWidth: '90vw', overflow: 'auto', fontSize: '12px' }}>
+                        {this.state.error?.toString()}
+                    </pre>
+                    <button onClick={() => window.location.reload()} style={{ marginTop: '24px', padding: '12px 24px', background: '#b91c1c', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>RECARREGAR APLICAÇÃO</button>
+                    <p style={{ marginTop: '16px', fontSize: '12px', opacity: 0.7 }}>NexFinance v1.1.0-pro (Global Error Catch)</p>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 const App: React.FC = () => {
     const { settings, isAuthenticated, authLoading, setSession } = useFinanceStore();
 
@@ -34,7 +59,7 @@ const App: React.FC = () => {
             })
             .catch((error) => {
                 console.error("Erro ao obter a sessão do Supabase:", error);
-                setSession(null); // Desbloqueia a tela de loading em caso de erro
+                setSession(null);
             });
 
         // Listen for changes
@@ -59,40 +84,44 @@ const App: React.FC = () => {
     if (!isAuthenticated) {
         return (
             <Router>
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="*" element={<Navigate to="/login" replace />} />
-                </Routes>
+                <ErrorBoundary>
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="*" element={<Navigate to="/login" replace />} />
+                    </Routes>
+                </ErrorBoundary>
             </Router>
         );
     }
 
     return (
         <Router>
-            <div className="app-container">
-                <Sidebar />
-                <main className="main-content">
-                    <div className="scroll-area">
-                        <Routes>
-                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                            <Route path="/dashboard" element={<Dashboard />} />
-                            <Route path="/financial-flow" element={<FinancialFlow />} />
-                            <Route path="/transactions" element={<Transactions />} />
-                            <Route path="/income" element={<Income />} />
-                            <Route path="/expenses" element={<Expenses />} />
-                            <Route path="/accounts" element={<Accounts />} />
-                            <Route path="/cards" element={<Cards />} />
-                            <Route path="/goals" element={<Goals />} />
-                            <Route path="/planning" element={<Planning />} />
-                            <Route path="/categories" element={<Categories />} />
-                            <Route path="/settings" element={<Settings />} />
-                            <Route path="/migration" element={<Migration />} />
-                            <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-                        </Routes>
-                    </div>
-                </main>
-                <MobileNav />
-            </div>
+            <ErrorBoundary>
+                <div className="app-container">
+                    <Sidebar />
+                    <main className="main-content">
+                        <div className="scroll-area">
+                            <Routes>
+                                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                                <Route path="/dashboard" element={<Dashboard />} />
+                                <Route path="/financial-flow" element={<FinancialFlow />} />
+                                <Route path="/transactions" element={<Transactions />} />
+                                <Route path="/income" element={<Income />} />
+                                <Route path="/expenses" element={<Expenses />} />
+                                <Route path="/accounts" element={<Accounts />} />
+                                <Route path="/cards" element={<Cards />} />
+                                <Route path="/goals" element={<Goals />} />
+                                <Route path="/planning" element={<Planning />} />
+                                <Route path="/categories" element={<Categories />} />
+                                <Route path="/settings" element={<Settings />} />
+                                <Route path="/migration" element={<Migration />} />
+                                <Route path="/login" element={<Navigate to="/dashboard" replace />} />
+                            </Routes>
+                        </div>
+                    </main>
+                    <MobileNav />
+                </div>
+            </ErrorBoundary>
         </Router>
     );
 };
