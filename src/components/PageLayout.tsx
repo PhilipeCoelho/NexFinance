@@ -7,9 +7,10 @@ interface PageLayoutProps {
     title: string;
     children: React.ReactNode;
     summaryPanel?: React.ReactNode;
+    actions?: React.ReactNode;
 }
 
-const PageLayout: React.FC<PageLayoutProps> = ({ title, children, summaryPanel }) => {
+const PageLayout: React.FC<PageLayoutProps> = ({ title, children, summaryPanel, actions }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     return (
@@ -18,22 +19,23 @@ const PageLayout: React.FC<PageLayoutProps> = ({ title, children, summaryPanel }
                 <div className="sys-header-left">
                     <h1 className="sys-page-title">{title}</h1>
                     <MonthSelector />
+                    {actions}
                 </div>
                 <button className="sys-btn-primary" onClick={() => setIsModalOpen(true)}>
-                    <Plus size={18} strokeWidth={3} /> Nova Transação
+                    <Plus size={16} strokeWidth={3} /> Nova Transação
                 </button>
             </header>
 
-            <div className={summaryPanel ? "sys-content-grid" : "sys-content-single"}>
-                <div className="sys-main-content">
+            <main className="sys-content-layout">
+                <div className="sys-main-area">
                     {children}
                 </div>
                 {summaryPanel && (
-                    <div className="sys-summary-sidebar">
+                    <aside className="sys-summary-area">
                         {summaryPanel}
-                    </div>
+                    </aside>
                 )}
-            </div>
+            </main>
 
             <TransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
         </div>

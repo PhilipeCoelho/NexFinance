@@ -32,6 +32,7 @@ interface TransactionFormData {
   description: string;
   categoryId: string;
   accountId: string;
+  toAccountId?: string;
   creditCardId: string;
   status: 'confirmed' | 'forecast';
   isFixed: boolean;
@@ -288,8 +289,48 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
         )}
 
         <form onSubmit={handleSubmit(data => finalizeSubmit(data, false))} className="mobills-form">
+
+          {/* Nova camada de seleção de tipo para transações novas */}
+          {!editingTransaction && (
+            <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', padding: '0 20px' }}>
+              <button
+                type="button"
+                onClick={() => setValue('type', 'expense')}
+                style={{
+                  flex: 1, padding: '16px 0', border: 'none', background: 'transparent',
+                  fontSize: '13px', fontWeight: 700,
+                  color: transactionType === 'expense' ? 'var(--sys-red)' : '#94a3b8',
+                  borderBottom: transactionType === 'expense' ? '3px solid var(--sys-red)' : 'none',
+                  cursor: 'pointer'
+                }}
+              >DESPESA</button>
+              <button
+                type="button"
+                onClick={() => setValue('type', 'income')}
+                style={{
+                  flex: 1, padding: '16px 0', border: 'none', background: 'transparent',
+                  fontSize: '13px', fontWeight: 700,
+                  color: transactionType === 'income' ? 'var(--sys-green)' : '#94a3b8',
+                  borderBottom: transactionType === 'income' ? '3px solid var(--sys-green)' : 'none',
+                  cursor: 'pointer'
+                }}
+              >RECEITA</button>
+              <button
+                type="button"
+                onClick={() => setValue('type', 'transfer')}
+                style={{
+                  flex: 1, padding: '16px 0', border: 'none', background: 'transparent',
+                  fontSize: '13px', fontWeight: 700,
+                  color: transactionType === 'transfer' ? 'var(--sys-blue)' : '#94a3b8',
+                  borderBottom: transactionType === 'transfer' ? '3px solid var(--sys-blue)' : 'none',
+                  cursor: 'pointer'
+                }}
+              >TRANSFERÊNCIA</button>
+            </div>
+          )}
+
           {/* Main Value Area */}
-          <div className="mobills-hero">
+          <div className="mobills-hero" style={{ padding: '24px 20px' }}>
             <div className="value-container">
               <span className={`currency ${transactionType}`}>{currencyPrefix}</span>
               <input
@@ -356,10 +397,11 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
               </div>
             </div>
 
-            {/* Account */}
+            {/* Account (Origin) */}
             <div className="mobills-field-row">
               <div className="field-icon-box"><Wallet size={18} opacity={0.5} /></div>
               <div className="field-content">
+                <span className="field-label" style={{ fontSize: '11px', marginRight: '8px' }}>{transactionType === 'transfer' ? 'ORIGEM' : ''}</span>
                 <select {...register('accountId', { required: true })} className="mobills-select-minimal">
                   {data.accounts.map(acc => (
                     <option key={acc.id} value={acc.id}>{acc.name}</option>
@@ -367,6 +409,22 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
                 </select>
               </div>
             </div>
+
+            {/* Target Account (Transfer only) */}
+            {transactionType === 'transfer' && (
+              <div className="mobills-field-row">
+                <div className="field-icon-box"><ArrowRight size={18} opacity={0.5} /></div>
+                <div className="field-content">
+                  <span className="field-label" style={{ fontSize: '11px', marginRight: '8px' }}>DESTINO</span>
+                  <select {...register('toAccountId', { required: transactionType === 'transfer' })} className="mobills-select-minimal">
+                    <option value="">Selecione o destino</option>
+                    {data.accounts.map(acc => (
+                      <option key={acc.id} value={acc.id} disabled={acc.id === watch('accountId')}>{acc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
 
             {/* Ignore Transaction (Moved outside details) */}
             <div className="mobills-field-row">

@@ -1,177 +1,155 @@
 :root {
-    /* Globais: Cores */
-    --sys-green: #3fb950;
-    --sys-red: #ff4d4d;
+    /* Globais: Cores (Mercy/Ramp Palette - Minimalist) */
+    --sys-primary: #1a1d21;
+    /* Deep dark for text/primary icons */
     --sys-blue: #2f81f7;
+    /* Focused actions */
+    --sys-green: #3fb950;
+    /* Success/Incomes */
+    --sys-red: #f85149;
+    /* Error/Expenses */
     --sys-yellow: #d29922;
+    /* Warnings/Projected */
+    --sys-bg: #f8fafc;
+    /* Light cool background */
+    --sys-card-bg: #ffffff;
+    --sys-border: #e2e8f0;
+    /* Subtle borders */
+    --sys-text-primary: #1e293b;
+    --sys-text-secondary: #64748b;
 
-    /* Globais: Tipografia */
-    --sys-title-size: 24px;
-    --sys-subtitle-size: 16px;
-    --sys-value-size: 28px;
-    --sys-table-size: 14px;
+    /* Globais: Tipografia (Inter is already in index.html) */
+    --sys-font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
     /* Globais: Espaçamento (Base 8px) */
-    --sys-space-base: 8px;
-    --sys-space-sm: 16px;
-    --sys-space-md: 24px;
-    --sys-space-lg: 32px;
+    --sys-space-xs: 4px;
+    --sys-space-sm: 8px;
+    --sys-space-md: 16px;
+    --sys-space-lg: 24px;
+    --sys-space-xl: 32px;
 
-    /* Globais: Cards */
-    --sys-card-radius: 12px;
-    --sys-card-padding: 20px;
-    --sys-card-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-    --sys-card-bg: #ffffff;
+    /* Globais: Objetos */
+    --sys-radius-sm: 8px;
+    --sys-radius-md: 12px;
+    --sys-radius-lg: 16px;
+    --sys-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --sys-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --sys-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
 }
 
-/* Base de página padrão */
+body {
+    font-family: var(--sys-font-main);
+    background-color: var(--sys-bg);
+    color: var(--sys-text-primary);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Page Structure */
 .sys-page-container {
-    display: grid;
-    grid-template-rows: auto 1fr;
+    display: flex;
+    flex-direction: column;
     height: 100vh;
-    background-color: #f8fafc;
+    overflow: hidden;
 }
 
-/* Header Padrão */
+/* Header - Modern Minimalist */
 .sys-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--sys-space-md) var(--sys-space-lg);
+    padding: var(--sys-space-md) var(--sys-space-xl);
     background-color: var(--sys-card-bg);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--sys-border);
+    height: 72px;
+    flex-shrink: 0;
 }
 
 .sys-header-left {
     display: flex;
     align-items: center;
-    gap: var(--sys-space-md);
+    gap: var(--sys-space-lg);
 }
 
 .sys-page-title {
-    font-size: var(--sys-title-size);
+    font-size: 20px;
     font-weight: 700;
-    color: #1a1d21;
+    color: var(--sys-primary);
     margin: 0;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
 }
 
+/* Action Button */
 .sys-btn-primary {
     background-color: var(--sys-blue);
     color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: var(--sys-radius-md);
+    font-size: 13px;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 8px;
     border: none;
     cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 10px rgba(47, 129, 247, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .sys-btn-primary:hover {
     background-color: #1a6edb;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(47, 129, 247, 0.2);
 }
 
-/* Grid principal (Content + Sidebar) */
-.sys-content-grid {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: var(--sys-space-lg);
-    padding: var(--sys-space-md) var(--sys-space-lg);
-    align-items: flex-start;
+/* Layout Grid */
+.sys-content-layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: var(--sys-space-xl);
+    gap: var(--sys-space-xl);
+}
+
+.sys-main-area {
+    flex: 1;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sys-space-xl);
 }
 
-/* Single column mode */
-.sys-content-single {
-    padding: var(--sys-space-md) var(--sys-space-lg);
-    overflow-y: auto;
+.sys-summary-area {
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sys-space-md);
+    flex-shrink: 0;
 }
 
-@media (max-width: 1024px) {
-    .sys-content-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Cards padronizados */
+/* Cards */
 .sys-card {
     background-color: var(--sys-card-bg);
-    border-radius: var(--sys-card-radius);
-    padding: var(--sys-card-padding);
-    box-shadow: var(--sys-card-shadow);
-    border: 1px solid rgba(0, 0, 0, 0.03);
+    border-radius: var(--sys-radius-md);
+    padding: var(--sys-space-lg);
+    box-shadow: var(--sys-shadow-md);
+    border: 1px solid var(--sys-border);
+    transition: box-shadow 0.2s;
 }
 
-/* Resumo Lateral */
-.sys-summary-sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sys-space-sm);
+.sys-card:hover {
+    box-shadow: var(--sys-shadow-lg);
 }
 
-.sys-summary-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.sys-summary-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.sys-summary-label {
-    font-size: 12px;
-    color: #64748b;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.sys-summary-value {
-    font-size: var(--sys-value-size);
+/* KPI Items */
+.sys-kpi-value {
+    font-size: 24px;
     font-weight: 800;
-    font-family: 'Outfit', sans-serif;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.04em;
+    margin: 4px 0;
 }
 
-.sys-summary-icon-box {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-}
-
-.bg-green {
-    background-color: var(--sys-green);
-    box-shadow: 0 4px 10px rgba(63, 185, 80, 0.25);
-}
-
-.bg-red {
-    background-color: var(--sys-red);
-    box-shadow: 0 4px 10px rgba(255, 77, 77, 0.25);
-}
-
-.bg-blue {
-    background-color: var(--sys-blue);
-    box-shadow: 0 4px 10px rgba(47, 129, 247, 0.25);
-}
-
-.bg-yellow {
-    background-color: var(--sys-yellow);
-    box-shadow: 0 4px 10px rgba(210, 153, 34, 0.25);
-}
-
+/* Utility Colors */
 .color-green {
     color: var(--sys-green);
 }
@@ -184,41 +162,72 @@
     color: var(--sys-blue);
 }
 
-/* Tabela System */
+.color-yellow {
+    color: var(--sys-yellow);
+}
+
+.bg-green {
+    background-color: rgba(63, 185, 80, 0.1);
+    color: var(--sys-green);
+}
+
+.bg-red {
+    background-color: rgba(248, 81, 73, 0.1);
+    color: var(--sys-red);
+}
+
+.bg-blue {
+    background-color: rgba(47, 129, 247, 0.1);
+    color: var(--sys-blue);
+}
+
+.bg-yellow {
+    background-color: rgba(210, 153, 34, 0.1);
+    color: var(--sys-yellow);
+}
+
+/* Table System */
+.sys-table-container {
+    overflow-x: auto;
+}
+
 .sys-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .sys-table th {
     text-align: left;
     padding: 12px 16px;
     font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
+    font-weight: 650;
+    color: var(--sys-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 2px solid #f1f5f9;
+    border-bottom: 1px solid var(--sys-border);
+    background-color: #fafbfc;
 }
 
 .sys-table td {
     padding: 16px;
-    font-size: var(--sys-table-size);
-    color: #1e293b;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
+    font-size: 13px;
+    color: var(--sys-text-primary);
+    border-bottom: 1px solid var(--sys-border);
+    background-color: white;
 }
 
-.sys-table tr:last-child td {
-    border-bottom: none;
+.sys-table tr:hover td {
+    background-color: #f8fafc;
 }
 
-.sys-table tr:hover {
-    background-color: #fcfcfc;
-}
-
-.sys-table-val {
-    font-weight: 700;
-    font-family: 'Outfit', sans-serif;
-    font-size: 15px;
+/* Tooltip/Badges */
+.sys-badge {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }

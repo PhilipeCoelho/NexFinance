@@ -29,14 +29,13 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', path: '/dashboard' },
+    { icon: Receipt, label: 'Transações', id: 'transactions', path: '/transactions' },
     { icon: TrendingUp, label: 'Receitas', id: 'income', path: '/income' },
     { icon: TrendingDown, label: 'Despesas', id: 'expenses', path: '/expenses' },
-    { icon: Receipt, label: 'Transações', id: 'transactions', path: '/transactions' },
     { icon: Wallet, label: 'Contas', id: 'accounts', path: '/accounts' },
     { icon: CreditCard, label: 'Cartões', id: 'cards', path: '/cards' },
-    { icon: Target, label: 'Objetivos', id: 'goals', path: '/goals' },
     { icon: PieChart, label: 'Planejamento', id: 'planning', path: '/planning' },
-    { icon: Tags, label: 'Categorias & Tags', id: 'categories', path: '/categories' },
+    { icon: Tags, label: 'Categorias', id: 'categories', path: '/categories' },
   ];
 
   const handleContextChange = (context: ContextType) => {
