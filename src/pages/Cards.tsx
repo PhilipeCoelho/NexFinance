@@ -46,29 +46,33 @@ const Cards: React.FC = () => {
     if (!data) return null;
 
     const summaryPanel = (
-        <>
-            <div className="sys-card sys-summary-item">
-                <div className="sys-summary-info">
-                    <span className="sys-summary-label">Limite Total</span>
-                    <span className="sys-summary-value" style={{ color: '#8b5cf6' }}>{formatCurrency(stats.totalLimit)}</span>
-                </div>
-                <div className="sys-summary-icon-box" style={{ backgroundColor: '#8b5cf6' }}><Scale size={24} /></div>
+        <div className="sys-summary-widget">
+            <div className="sys-summary-widget-header">
+                Consolidado de Crédito
             </div>
-            <div className="sys-card sys-summary-item">
-                <div className="sys-summary-info">
-                    <span className="sys-summary-label">Limite Utilizado</span>
-                    <span className="sys-summary-value color-red">{formatCurrency(stats.used)}</span>
+            <div className="sys-summary-block">
+                <span className="sys-summary-block-title">Limite Utilizado</span>
+                <span className="sys-summary-block-value color-red">{formatCurrency(stats.used)}</span>
+                <div className="sys-progress-bar-bg">
+                    <div className="sys-progress-bar-fill bg-red" style={{ width: `${(stats.used / stats.totalLimit) * 100}%` }} />
                 </div>
-                <div className="sys-summary-icon-box bg-red"><ArrowUp size={24} /></div>
             </div>
-            <div className="sys-card sys-summary-item">
-                <div className="sys-summary-info">
-                    <span className="sys-summary-label">Limite Disponível</span>
-                    <span className="sys-summary-value color-green">{formatCurrency(stats.available)}</span>
+            <div className="sys-summary-block">
+                <span className="sys-summary-block-title">Limite Disponível</span>
+                <span className="sys-summary-block-value color-green">{formatCurrency(stats.available)}</span>
+                <div className="sys-progress-bar-bg">
+                    <div className="sys-progress-bar-fill bg-green" style={{ width: `${(stats.available / stats.totalLimit) * 100}%` }} />
                 </div>
-                <div className="sys-summary-icon-box bg-green"><ArrowDown size={24} /></div>
             </div>
-        </>
+            <div className="sys-summary-block" style={{ borderBottom: 'none', paddingTop: '8px' }}>
+                <span className="sys-summary-block-title" style={{ fontSize: '13px' }}>
+                    Limite Total
+                </span>
+                <span className="sys-summary-block-value" style={{ fontSize: '24px', color: 'var(--sys-primary)' }}>
+                    {formatCurrency(stats.totalLimit)}
+                </span>
+            </div>
+        </div>
     );
 
     return (

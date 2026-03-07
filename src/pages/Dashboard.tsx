@@ -169,160 +169,191 @@ const Dashboard: React.FC = () => {
     </button>
   );
 
+  const summaryPanel = (
+    <div className="sys-summary-widget">
+      <div className="sys-summary-widget-header">
+        Balanço do Mês
+      </div>
+      <div className="sys-summary-block">
+        <span className="sys-summary-block-title">Entradas</span>
+        <span className="sys-summary-block-value color-green">{formatCurrency(incomeTotal)}</span>
+      </div>
+      <div className="sys-summary-block">
+        <span className="sys-summary-block-title">Saídas</span>
+        <span className="sys-summary-block-value color-red">{formatCurrency(expenseTotal)}</span>
+      </div>
+      <div className="sys-summary-block" style={{ borderBottom: 'none' }}>
+        <span className="sys-summary-block-title">Resultado Líquido</span>
+        <span className={`sys-summary-block-value ${incomeTotal - expenseTotal >= 0 ? 'color-green' : 'color-red'}`}>
+          {formatCurrency(incomeTotal - expenseTotal)}
+        </span>
+      </div>
+
+      <div className="sys-summary-widget-header" style={{ marginTop: '16px' }}>
+        Alertas Rápidos
+      </div>
+      {(pendingExpenses.count > 0 || pendingIncomes.count > 0) ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {pendingExpenses.count > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '10px' }}>
+              <ArrowDown size={14} className="color-red" />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700 }}>{formatCurrency(pendingExpenses.value)}</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>{pendingExpenses.count} despesas abertas</span>
+              </div>
+            </div>
+          )}
+          {pendingIncomes.count > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '10px' }}>
+              <ArrowUp size={14} className="color-green" />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700 }}>{formatCurrency(pendingIncomes.value)}</span>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>{pendingIncomes.count} receitas abertas</span>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ padding: '12px', textAlign: 'center', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '10px', fontSize: '12px', color: 'var(--sys-green)', fontWeight: 600 }}>
+          Tudo em dia!
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <PageLayout title="Visão Geral" actions={dashboardActions}>
+    <PageLayout title="Visão Geral" actions={dashboardActions} summaryPanel={summaryPanel}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
-        {/* 1. KPIs ALWAYS VISIBLE */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px' }}>
-          <div className="sys-card" style={{ flex: 1, minWidth: '240px' }}>
+        {/* 1. KPIs ALWAYS VISIBLE - Using new sys-grid */}
+        <div className="sys-grid">
+          <div className="sys-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Liquidez Atual</span>
+              <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Liquidez Atual</span>
               <div className="sys-summary-icon-box bg-blue" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
                 <Wallet size={16} />
               </div>
             </div>
-            <div style={{ fontSize: '24px', fontWeight: 800, color: '#1a1d21' }}>{formatCurrency(currentLiquidity)}</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>Saldo total em contas</div>
+            <div className="sys-financial-value">{formatCurrency(currentLiquidity)}</div>
+            <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>Saldo total em contas</div>
           </div>
-          <div className="sys-card" style={{ flex: 1, minWidth: '240px' }}>
+          <div className="sys-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Entradas</span>
+              <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Entradas</span>
               <div className="sys-summary-icon-box bg-green" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
                 <TrendingUp size={16} />
               </div>
             </div>
-            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--sys-green)' }}>{formatCurrency(incomeTotal)}</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>
+            <div className="sys-financial-value color-green">{formatCurrency(incomeTotal)}</div>
+            <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>
               Recebido em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
-              {incomeIgnored > 0 && ` · (+${formatCurrency(incomeIgnored)} ignorados)`}
             </div>
           </div>
-          <div className="sys-card" style={{ flex: 1, minWidth: '240px' }}>
+          <div className="sys-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Saídas</span>
+              <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Saídas</span>
               <div className="sys-summary-icon-box bg-red" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
                 <TrendingDown size={16} />
               </div>
             </div>
-            <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--sys-red)' }}>{formatCurrency(expenseTotal)}</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>
+            <div className="sys-financial-value color-red">{formatCurrency(expenseTotal)}</div>
+            <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>
               Gasto em {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
-              {expenseIgnored > 0 && ` · (+${formatCurrency(expenseIgnored)} ignorados)`}
+            </div>
+          </div>
+          <div className="sys-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Fim do Mês</span>
+              <div className="sys-summary-icon-box bg-yellow" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
+                <Calendar size={16} />
+              </div>
+            </div>
+            <div className={`sys-financial-value ${projectedEndBalance >= 0 ? 'color-green' : 'color-red'}`}>{formatCurrency(projectedEndBalance)}</div>
+            <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>
+              Projeção final
             </div>
           </div>
         </div>
 
-        {/* 2. DYNAMIC WIDGETS AREA - GRID STYLE (CARDS DE ANTIGAMENTE) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-
-          {/* Widget: Saldo Projetado */}
-          <WidgetWrapper id="proj_30" label="Saldo Final Projetado">
-            <div className="sys-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--sys-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-warning)' }}>
-                    <Calendar size={18} />
+        {/* 2. ZONA DE INSIGHTS & ATIVIDADE (WIDGETS CUSTOMIZÁVEIS) */}
+        <div>
+          <h2 className="sys-subtitle" style={{ margin: '0 0 16px 0' }}>Insights Financeiros</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px' }}>
+            {/* Widget: Alertas/Pendentes */}
+            <WidgetWrapper id="pending" label="Alertas e Pendências">
+              <div className="sys-card" onClick={() => navigate('/transactions?filter=pending')} style={{ cursor: 'pointer', height: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-red)' }}>
+                      <AlertCircle size={18} />
+                    </div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Faturas em Aberto</h3>
                   </div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Saldo Final Projetado</h3>
                 </div>
-                <ArrowUpRight size={16} color="#94a3b8" />
-              </div>
-              <div>
-                <span style={{ fontSize: '28px', fontWeight: 800, color: projectedEndBalance >= 0 ? 'var(--sys-green)' : 'var(--sys-red)' }}>{formatCurrency(projectedEndBalance)}</span>
-                <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', fontWeight: 500 }}>
-                  Expetativa para final de {format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: ptBR })}
-                </p>
-              </div>
-            </div>
-          </WidgetWrapper>
-
-          {/* Widget: Vencimentos */}
-          <WidgetWrapper id="upcoming" label="Vencimentos do Mês">
-            <div className="sys-card">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--sys-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-primary)' }}>
-                    <Clock size={18} />
-                  </div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Vencimentos do Mês</h3>
-                </div>
-              </div>
-              <div>
-                {displayUpcoming.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {displayUpcoming.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: i === displayUpcoming.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
-                          <div style={{
-                            width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
-                            backgroundColor: item.daysLeft < 0 ? 'var(--sys-red)' : 'var(--sys-warning)'
-                          }} />
-                          <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#1a1d21', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
-                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>{format(item.effDate, "dd/MM")} {item.daysLeft < 0 ? ` · Vencido há ${Math.abs(item.daysLeft)}d` : item.daysLeft === 0 ? ' · Hoje' : ` · em ${item.daysLeft}d`}</span>
+                <div>
+                  {(pendingExpenses.count > 0 || pendingIncomes.count > 0) ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {pendingExpenses.count > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <div style={{ padding: '8px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--sys-red)', borderRadius: '10px' }}>
+                            <ArrowDown size={16} />
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontSize: '16px', fontWeight: 800, color: 'var(--sys-red)' }}>{formatCurrency(pendingExpenses.value)}</span>
+                            <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{pendingExpenses.count} pagamentos pendentes</span>
                           </div>
                         </div>
-                        <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--sys-red)', whiteSpace: 'nowrap' }}>{formatCurrency(item.value)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', color: '#94a3b8' }}>
-                    <CheckCircle2 size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                    <span style={{ fontSize: '13px', fontWeight: 500 }}>Tudo pago no mês</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </WidgetWrapper>
-
-          {/* Widget: Alertas/Pendentes */}
-          <WidgetWrapper id="pending" label="Alertas e Pendências">
-            <div className="sys-card" onClick={() => navigate('/transactions?filter=pending')} style={{ cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(239, 68, 68, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-red)' }}>
-                    <AlertCircle size={18} />
-                  </div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Alertas</h3>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', color: 'var(--sys-green)', fontWeight: 600, fontSize: '14px', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderRadius: '12px' }}>
+                      Financeiro em Dia
+                    </div>
+                  )}
                 </div>
               </div>
-              <div>
-                {(pendingExpenses.count > 0 || pendingIncomes.count > 0) ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {pendingExpenses.count > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ padding: '8px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--sys-red)', borderRadius: '8px' }}>
-                          <ArrowDown size={16} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-red)' }}>{formatCurrency(pendingExpenses.value)}</span>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{pendingExpenses.count} despesas pendentes</span>
-                        </div>
-                      </div>
-                    )}
-                    {pendingIncomes.count > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ padding: '8px', backgroundColor: 'rgba(34, 197, 94, 0.1)', color: 'var(--sys-green)', borderRadius: '8px' }}>
-                          <ArrowUp size={16} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-green)' }}>{formatCurrency(pendingIncomes.value)}</span>
-                          <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>{pendingIncomes.count} receitas pendentes</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80px', color: 'var(--sys-green)', fontWeight: 600, fontSize: '14px', backgroundColor: 'rgba(34, 197, 94, 0.1)', borderRadius: '12px' }}>
-                    Sistema Reconciliado
-                  </div>
-                )}
-              </div>
-            </div>
-          </WidgetWrapper>
+            </WidgetWrapper>
 
+            {/* Widget: Vencimentos */}
+            <WidgetWrapper id="upcoming" label="Próximos Vencimentos">
+              <div className="sys-card">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'var(--sys-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-primary)' }}>
+                      <Clock size={18} />
+                    </div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--sys-text-primary)', margin: 0 }}>Vencendo em Breve</h3>
+                  </div>
+                </div>
+                <div>
+                  {displayUpcoming.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {displayUpcoming.map((item, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: i === displayUpcoming.length - 1 ? 'none' : '1px solid var(--sys-border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', overflow: 'hidden' }}>
+                            <div style={{
+                              width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                              backgroundColor: item.daysLeft < 0 ? 'var(--sys-red)' : 'var(--sys-warning)'
+                            }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--sys-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--sys-text-secondary)' }}>{format(item.effDate, "dd/MM")} {item.daysLeft < 0 ? ` · Vencido` : item.daysLeft === 0 ? ' · Hoje' : ` · em ${item.daysLeft}d`}</span>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--sys-red)', whiteSpace: 'nowrap' }}>{formatCurrency(item.value)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', color: '#94a3b8' }}>
+                      <CheckCircle2 size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
+                      <span style={{ fontSize: '13px', fontWeight: 500 }}>Nenhum débito pendente</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </WidgetWrapper>
+          </div>
         </div>
 
         {isCustomizing && (
@@ -340,35 +371,19 @@ const Dashboard: React.FC = () => {
 
       </div>
 
-      <TransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
-      {/* Float Button para Mobile/Quick Actions */}
-      {!isCustomizing && (
-        <button
-          onClick={() => setIsModalOpen(true)}
-          style={{
-            position: 'fixed', bottom: '32px', right: '32px', width: '56px', height: '56px', borderRadius: '16px',
-            backgroundColor: 'var(--sys-blue)', color: 'white', border: 'none', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', boxShadow: '0 8px 20px rgba(47, 129, 247, 0.3)', cursor: 'pointer', zIndex: 100
-          }}
-        >
-          <Plus size={24} strokeWidth={3} />
-        </button>
-      )}
-
       <style>{`
-                @keyframes wiggle {
-                    0% { transform: rotate(0.4deg); }
-                    50% { transform: rotate(-0.4deg); }
-                    100% { transform: rotate(0.4deg); }
-                }
-                .wiggle {
-                    animation: wiggle 0.5s ease-in-out infinite;
-                }
-                .widget-hidden {
-                    order: 999;
-                }
-            `}</style>
+        @keyframes wiggle {
+            0% { transform: rotate(0.4deg); }
+            50% { transform: rotate(-0.4deg); }
+            100% { transform: rotate(0.4deg); }
+        }
+        .wiggle {
+            animation: wiggle 0.5s ease-in-out infinite;
+        }
+        .widget-hidden {
+            order: 999;
+        }
+    `}</style>
     </PageLayout>
   );
 };

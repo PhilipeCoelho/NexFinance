@@ -36,7 +36,7 @@ export class FinancialEngine {
         creditCards: CreditCard[],
         invoices: Invoice[]
     ): { updatedAccounts: Account[], updatedCards: CreditCard[], updatedInvoices: Invoice[] } {
-        if (t.status !== 'confirmed') {
+        if (t.status !== 'confirmed' || t.isIgnored) {
             return { updatedAccounts: accounts, updatedCards: creditCards, updatedInvoices: invoices };
         }
 
@@ -91,7 +91,7 @@ export class FinancialEngine {
         creditCards: CreditCard[],
         invoices: Invoice[]
     ): { updatedAccounts: Account[], updatedCards: CreditCard[], updatedInvoices: Invoice[] } {
-        if (t.status !== 'confirmed') {
+        if (t.status !== 'confirmed' || t.isIgnored) {
             return { updatedAccounts: accounts, updatedCards: creditCards, updatedInvoices: invoices };
         }
 
@@ -142,7 +142,7 @@ export class FinancialEngine {
         let rebuiltCards = creditCards.map(card => ({ ...card, limitAvailable: card.limitTotal || 0 }));
         let rebuiltInvoices = invoices.map(inv => ({ ...inv, totalValue: 0 }));
 
-        const confirmedTransactions = transactions.filter(t => t.status === 'confirmed');
+        const confirmedTransactions = transactions.filter(t => t.status === 'confirmed' && !t.isIgnored);
         confirmedTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         for (const t of confirmedTransactions) {

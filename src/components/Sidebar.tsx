@@ -31,14 +31,15 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', path: '/dashboard' },
-    { icon: Activity, label: 'Fluxo Financeiro', id: 'financial-flow', path: '/financial-flow' },
     { icon: Receipt, label: 'Transações', id: 'transactions', path: '/transactions' },
     { icon: TrendingUp, label: 'Receitas', id: 'income', path: '/income' },
     { icon: TrendingDown, label: 'Despesas', id: 'expenses', path: '/expenses' },
     { icon: Wallet, label: 'Contas', id: 'accounts', path: '/accounts' },
     { icon: CreditCard, label: 'Cartões', id: 'cards', path: '/cards' },
     { icon: PieChart, label: 'Planejamento', id: 'planning', path: '/planning' },
+    { icon: Target, label: 'Objetivos', id: 'goals', path: '/goals' },
     { icon: Tags, label: 'Categorias', id: 'categories', path: '/categories' },
+    { icon: Settings, label: 'Configurações', id: 'settings', path: '/settings' },
   ];
 
   const handleContextChange = (context: ContextType) => {
@@ -84,13 +85,6 @@ const Sidebar: React.FC = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <button
-          className={`nav-item settings ${location.pathname === '/settings' ? 'active' : ''}`}
-          onClick={() => navigate('/settings')}
-        >
-          <Settings size={20} />
-          <span>Configurações</span>
-        </button>
 
         <button
           className="nav-item logout"

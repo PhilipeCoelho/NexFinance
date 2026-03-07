@@ -18,15 +18,17 @@ const PageLayout: React.FC<PageLayoutProps> = ({ title, children, summaryPanel, 
             <header className="sys-header">
                 <div className="sys-header-left">
                     <h1 className="sys-page-title">{title}</h1>
-                    <MonthSelector />
                     {actions}
                 </div>
-                <button className="sys-btn-primary" onClick={() => setIsModalOpen(true)}>
-                    <Plus size={16} strokeWidth={3} /> Nova Transação
-                </button>
+                <div className="sys-header-right">
+                    <MonthSelector />
+                    <button className="sys-btn-primary" onClick={() => setIsModalOpen(true)}>
+                        <Plus size={16} strokeWidth={3} /> Nova Transação
+                    </button>
+                </div>
             </header>
 
-            <main className="sys-content-layout">
+            <main className={`sys-content-layout ${summaryPanel ? 'sys-dashboard-grid' : ''}`}>
                 <div className="sys-main-area">
                     {children}
                 </div>

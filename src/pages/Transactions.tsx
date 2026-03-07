@@ -125,11 +125,12 @@ const Transactions: React.FC = () => {
   }, [visibleTransactions, referenceMonth, data]);
 
   const stats = useMemo(() => {
-    const income = visibleTransactions.filter(t => t.type === 'income' && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
-    const expenses = visibleTransactions.filter(t => t.type === 'expense' && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
+    const activeTransactions = visibleTransactions.filter(t => !t.isIgnored);
+    const income = activeTransactions.filter(t => t.type === 'income' && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
+    const expenses = activeTransactions.filter(t => t.type === 'expense' && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
     const balance = income - expenses;
 
-    const expensesList = visibleTransactions.filter(t => t.type === 'expense');
+    const expensesList = activeTransactions.filter(t => t.type === 'expense');
     const pending = expensesList.filter(t => FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) !== 'confirmed').reduce((acc, t) => acc + t.value, 0);
     const paid = expensesList.filter(t => FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
 
@@ -175,35 +176,45 @@ const Transactions: React.FC = () => {
 
   if (!data) return null;
 
+  const incomePercentage = stats.income > 0 ? (stats.income / (stats.income + stats.expenses)) * 100 : 0;
+  const expensePercentage = stats.expenses > 0 ? (stats.expenses / (stats.income + stats.expenses)) * 100 : 0;
+
   const summaryPanel = (
-    <>
-      <div className="sys-card sys-summary-item">
-        <div className="sys-summary-info">
-          <span className="sys-summary-label">Receitas</span>
-          <span className="sys-summary-value color-green">{formatCurrency(stats.income)}</span>
-        </div>
-        <div className="sys-summary-icon-box bg-green"><TrendingUp size={24} /></div>
+    <div className="sys-summary-widget">
+      <div className="sys-summary-widget-header">
+        Resumo do Mês
       </div>
-      <div className="sys-card sys-summary-item">
-        <div className="sys-summary-info">
-          <span className="sys-summary-label">Despesas</span>
-          <span className="sys-summary-value color-red">{formatCurrency(stats.expenses)}</span>
+
+      <div className="sys-summary-block">
+        <span className="sys-summary-block-title">Receitas</span>
+        <span className="sys-summary-block-value color-green">{formatCurrency(stats.income)}</span>
+        <div className="sys-progress-bar-bg">
+          <div className="sys-progress-bar-fill bg-green" style={{ width: `${incomePercentage}%` }} />
         </div>
-        <div className="sys-summary-icon-box bg-red"><TrendingDown size={24} /></div>
       </div>
-      <div className="sys-card sys-summary-item">
-        <div className="sys-summary-info">
-          <span className="sys-summary-label">Saldo</span>
-          <span className="sys-summary-value color-blue">{formatCurrency(stats.balance)}</span>
-          {!showIgnored && hiddenValue > 0 && (
-            <span style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, marginTop: '2px', display: 'block' }}>
-              + {formatCurrency(hiddenValue)} ignorados
-            </span>
-          )}
+
+      <div className="sys-summary-block">
+        <span className="sys-summary-block-title">Despesas</span>
+        <span className="sys-summary-block-value color-red">{formatCurrency(stats.expenses)}</span>
+        <div className="sys-progress-bar-bg">
+          <div className="sys-progress-bar-fill bg-red" style={{ width: `${expensePercentage}%` }} />
         </div>
-        <div className="sys-summary-icon-box bg-blue"><Scale size={24} /></div>
       </div>
-    </>
+
+      <div className="sys-summary-block" style={{ borderBottom: 'none', paddingTop: '8px' }}>
+        <span className="sys-summary-block-title" style={{ fontSize: '13px' }}>
+          Saldo
+        </span>
+        <span className={`sys-summary-block-value ${stats.balance >= 0 ? 'color-green' : 'color-red'}`} style={{ fontSize: '24px' }}>
+          {formatCurrency(stats.balance)}
+        </span>
+        {!showIgnored && hiddenValue > 0 && (
+          <span style={{ fontSize: '11px', color: 'var(--sys-text-secondary)', marginTop: '4px' }}>
+            + {formatCurrency(hiddenValue)} ignorados
+          </span>
+        )}
+      </div>
+    </div>
   );
 
   return (
@@ -243,77 +254,79 @@ const Transactions: React.FC = () => {
           </div>
         </div>
 
-        <table className="sys-table">
-          <thead>
-            <tr>
-              <th onClick={() => handleSort('status')} style={{ cursor: 'pointer', width: '50px' }}>Sit {getSortIcon('status')}</th>
-              <th onClick={() => handleSort('date')} style={{ cursor: 'pointer', width: '100px' }}>Data {getSortIcon('date')}</th>
-              <th onClick={() => handleSort('description')} style={{ cursor: 'pointer' }}>Descrição {getSortIcon('description')}</th>
-              <th onClick={() => handleSort('categoryId')} style={{ cursor: 'pointer' }}>Categoria {getSortIcon('categoryId')}</th>
-              <th onClick={() => handleSort('accountId')} style={{ cursor: 'pointer' }}>Conta {getSortIcon('accountId')}</th>
-              <th onClick={() => handleSort('value')} style={{ cursor: 'pointer', textAlign: 'right' }}>Valor {getSortIcon('value')}</th>
-              <th style={{ textAlign: 'right', width: '120px' }}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedTransactions.map(t => (
-              <tr key={t.id} style={{ opacity: t.isIgnored ? 0.5 : 1 }}>
-                <td>
-                  <div style={{ position: 'relative', display: 'inline-flex' }}>
-                    {FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? (
-                      <CheckCircle2 size={18} className={t.type === 'income' ? 'color-green' : 'color-blue'} />
-                    ) : (
-                      <AlertCircle size={18} className="color-yellow" />
-                    )}
-                    {t.isFixed && <Infinity size={10} style={{ position: 'absolute', bottom: -4, right: -4, color: '#64748b' }} />}
-                    {t.isRecurring && <Repeat size={10} style={{ position: 'absolute', bottom: -4, right: -4, color: '#64748b' }} />}
-                  </div>
-                </td>
-                <td style={{ color: '#64748b', fontSize: '13px' }}>
-                  {format(new Date(FinancialEngine.getAdjustedDate(t.date, referenceMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
-                </td>
-                <td>
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontWeight: 500, color: '#1a1d21' }}>{t.description}</span>
-                    {t.notes && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{t.notes}</span>}
-                  </div>
-                </td>
-                <td style={{ fontSize: '13px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: t.type === 'income' ? 'var(--sys-green)' : 'var(--sys-red)' }} />
-                    {data.categories.find(c => c.id === t.categoryId)?.name || 'Outros'}
-                  </div>
-                </td>
-                <td style={{ fontSize: '13px', color: '#64748b' }}>
-                  {data.accounts.find(a => a.id === t.accountId)?.name || 'Carteira'}
-                </td>
-                <td style={{ textAlign: 'right' }}>
-                  <span className={`sys-table-val ${t.type === 'income' ? 'color-green' : 'color-red'}`}>
-                    {formatCurrency(t.value)}
-                  </span>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                    <button onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored }, 'single', referenceMonth)} title={t.isIgnored ? "Considerar" : "Ignorar"} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                      {t.isIgnored ? <Eye size={16} color="var(--sys-blue)" /> : <EyeOff size={16} color="#94a3b8" />}
-                    </button>
-                    <button onClick={() => updateTransaction(t.id, { status: FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? 'forecast' : 'confirmed' }, (t.isFixed || t.isRecurring) ? 'single' : 'all', referenceMonth)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                      <Check size={16} color={FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? '#10b981' : '#cbd5e1'} />
-                    </button>
-                    <button onClick={() => handleEdit(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Edit3 size={16} color="#94a3b8" /></button>
-                    <button onClick={() => handleDeleteTrigger(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Trash2 size={16} color="#94a3b8" /></button>
-                  </div>
-                </td>
+        <div className="sys-table-container">
+          <table className="sys-table">
+            <thead>
+              <tr>
+                <th className="col-status" onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>Sit {getSortIcon('status')}</th>
+                <th className="col-date" onClick={() => handleSort('date')} style={{ cursor: 'pointer' }}>Data {getSortIcon('date')}</th>
+                <th onClick={() => handleSort('description')} style={{ cursor: 'pointer' }}>Descrição {getSortIcon('description')}</th>
+                <th onClick={() => handleSort('categoryId')} style={{ cursor: 'pointer' }}>Categoria {getSortIcon('categoryId')}</th>
+                <th onClick={() => handleSort('accountId')} style={{ cursor: 'pointer' }}>Conta {getSortIcon('accountId')}</th>
+                <th className="col-value" onClick={() => handleSort('value')} style={{ cursor: 'pointer' }}>Valor {getSortIcon('value')}</th>
+                <th className="col-actions">Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sortedTransactions.map(t => (
+                <tr key={t.id} style={{ opacity: t.isIgnored ? 0.5 : 1 }}>
+                  <td>
+                    <div style={{ position: 'relative', display: 'inline-flex' }}>
+                      {FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? (
+                        <CheckCircle2 size={18} className={t.type === 'income' ? 'color-green' : 'color-blue'} />
+                      ) : (
+                        <AlertCircle size={18} className="color-yellow" />
+                      )}
+                      {t.isFixed && <Infinity size={10} style={{ position: 'absolute', bottom: -4, right: -4, color: '#64748b' }} />}
+                      {t.isRecurring && <Repeat size={10} style={{ position: 'absolute', bottom: -4, right: -4, color: '#64748b' }} />}
+                    </div>
+                  </td>
+                  <td style={{ color: '#64748b', fontSize: '13px' }}>
+                    {format(new Date(FinancialEngine.getAdjustedDate(t.date, referenceMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontWeight: 500, color: '#1a1d21' }}>{t.description}</span>
+                      {t.notes && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{t.notes}</span>}
+                    </div>
+                  </td>
+                  <td style={{ fontSize: '13px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: t.type === 'income' ? 'var(--sys-green)' : 'var(--sys-red)' }} />
+                      {data.categories.find(c => c.id === t.categoryId)?.name || 'Outros'}
+                    </div>
+                  </td>
+                  <td style={{ fontSize: '13px', color: '#64748b' }}>
+                    {data.accounts.find(a => a.id === t.accountId)?.name || 'Carteira'}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <span className={`sys-table-val ${t.type === 'income' ? 'color-green' : 'color-red'}`}>
+                      {formatCurrency(t.value)}
+                    </span>
+                  </td>
+                  <td className="col-actions">
+                    <div className="sys-table-actions">
+                      <button className="sys-action-btn" onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored }, 'single', referenceMonth)} title={t.isIgnored ? "Considerar" : "Ignorar"}>
+                        {t.isIgnored ? <Eye size={16} color="var(--sys-blue)" /> : <EyeOff size={16} />}
+                      </button>
+                      <button className="sys-action-btn" onClick={() => updateTransaction(t.id, { status: FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? 'forecast' : 'confirmed' }, (t.isFixed || t.isRecurring) ? 'single' : 'all', referenceMonth)} title={FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? "Marcar como pendente" : "Marcar como pago"}>
+                        <Check size={16} color={FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed' ? 'var(--sys-green)' : 'currentColor'} />
+                      </button>
+                      <button className="sys-action-btn" onClick={() => handleEdit(t)}><Edit3 size={16} /></button>
+                      <button className="sys-action-btn delete" onClick={() => handleDeleteTrigger(t)}><Trash2 size={16} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        {sortedTransactions.length === 0 && (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-            Nenhuma transação encontrada no período.
-          </div>
-        )}
+          {sortedTransactions.length === 0 && (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+              Nenhuma transação encontrada no período.
+            </div>
+          )}
+        </div>
       </div>
 
       <TransactionModal
@@ -331,8 +344,8 @@ const Transactions: React.FC = () => {
               <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Excluir transação repetida?</h3>
               <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>Como deseja prosseguir com a exclusão?</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button className="sys-btn-primary" style={{ backgroundColor: '#1a1d21', justifyContent: 'center' }} onClick={() => confirmDelete('single')}>APENAS DESTE MÊS</button>
-                <button className="sys-btn-primary" style={{ backgroundColor: 'var(--sys-red)', justifyContent: 'center' }} onClick={() => confirmDelete('all')}>TODOS OS MESES</button>
+                <button className="sys-btn-secondary" style={{ justifyContent: 'center' }} onClick={() => confirmDelete('single')}>APENAS DESTE MÊS</button>
+                <button className="sys-btn-destructive" style={{ justifyContent: 'center' }} onClick={() => confirmDelete('all')}>TODOS OS MESES</button>
                 <button onClick={() => setShowDeletePrompt(false)} style={{ background: 'transparent', border: 'none', marginTop: 12, fontSize: 13, color: '#64748b', cursor: 'pointer', fontWeight: 600 }}>Cancelar</button>
               </div>
             </div>

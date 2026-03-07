@@ -4,22 +4,23 @@ import PageLayout from '@/components/PageLayout';
 
 const Planning: React.FC = () => {
     const summaryPanel = (
-        <>
-            <div className="sys-card sys-summary-item">
-                <div className="sys-summary-info">
-                    <span className="sys-summary-label">Orçamento Total</span>
-                    <span className="sys-summary-value">R$ 0,00</span>
-                </div>
-                <div className="sys-summary-icon-box bg-green"><Scale size={24} /></div>
+        <div className="sys-summary-widget">
+            <div className="sys-summary-widget-header">
+                Orçamento do Mês
             </div>
-            <div className="sys-card sys-summary-item">
-                <div className="sys-summary-info">
-                    <span className="sys-summary-label">Restante Livre</span>
-                    <span className="sys-summary-value" style={{ color: '#3b82f6' }}>R$ 0,00</span>
-                </div>
-                <div className="sys-summary-icon-box" style={{ backgroundColor: '#2563eb' }}><TrendingDown size={24} color="white" /></div>
+            <div className="sys-summary-block">
+                <span className="sys-summary-block-title">Meta de Gastos</span>
+                <span className="sys-summary-block-value color-blue">R$ 0,00</span>
             </div>
-        </>
+            <div className="sys-summary-block" style={{ borderBottom: 'none', paddingTop: '8px' }}>
+                <span className="sys-summary-block-title" style={{ fontSize: '13px' }}>
+                    Saldo Livre
+                </span>
+                <span className="sys-summary-block-value color-green" style={{ fontSize: '24px' }}>
+                    R$ 0,00
+                </span>
+            </div>
+        </div>
     );
 
     return (

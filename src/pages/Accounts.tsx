@@ -84,29 +84,27 @@ const Accounts: React.FC = () => {
     };
 
     const summaryPanel = (
-        <>
-            <div className="sys-card sys-summary-item">
-                <div className="sys-summary-info">
-                    <span className="sys-summary-label">Saldo em Contas</span>
-                    <span className="sys-summary-value">{formatCurrency(totalAccountsBalance)}</span>
-                </div>
-                <div className="sys-summary-icon-box" style={{ backgroundColor: '#slate-400' }}><Wallet size={24} color="#64748b" /></div>
+        <div className="sys-summary-widget">
+            <div className="sys-summary-widget-header">
+                Resumo de Contas
             </div>
-            <div className="sys-card sys-summary-item">
-                <div className="sys-summary-info">
-                    <span className="sys-summary-label">Faturas Abertas</span>
-                    <span className="sys-summary-value color-red">{formatCurrency(totalOpenInvoices)}</span>
-                </div>
-                <div className="sys-summary-icon-box bg-red"><AlertCircle size={24} /></div>
+            <div className="sys-summary-block">
+                <span className="sys-summary-block-title">Saldo Total</span>
+                <span className="sys-summary-block-value color-blue">{formatCurrency(totalAccountsBalance)}</span>
             </div>
-            <div className="sys-card sys-summary-item">
-                <div className="sys-summary-info">
-                    <span className="sys-summary-label">Liquidez Real</span>
-                    <span className="sys-summary-value color-green">{formatCurrency(liquidBalance)}</span>
-                </div>
-                <div className="sys-summary-icon-box bg-green"><TrendingUp size={24} /></div>
+            <div className="sys-summary-block">
+                <span className="sys-summary-block-title">Contas a Pagar (Faturas)</span>
+                <span className="sys-summary-block-value color-red">{formatCurrency(totalOpenInvoices)}</span>
             </div>
-        </>
+            <div className="sys-summary-block" style={{ borderBottom: 'none', paddingTop: '8px' }}>
+                <span className="sys-summary-block-title" style={{ fontSize: '13px' }}>
+                    Liquidez Real
+                </span>
+                <span className="sys-summary-block-value color-green" style={{ fontSize: '24px' }}>
+                    {formatCurrency(liquidBalance)}
+                </span>
+            </div>
+        </div>
     );
 
     return (
