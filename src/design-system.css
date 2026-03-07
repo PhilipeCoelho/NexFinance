@@ -320,9 +320,88 @@ body {
     color: var(--sys-blue);
 }
 
-.bg-yellow {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: var(--sys-yellow);
+/* Global Financial Styles */
+.sys-financial-value {
+    font-family: var(--sys-font-display);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    margin: 4px 0;
+}
+
+.sys-financial-val-sm {
+    font-family: var(--sys-font-display);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+/* Filters & Controls Row */
+.sys-filters-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--sys-space-md);
+    gap: var(--sys-space-md);
+}
+
+.sys-quick-filters {
+    display: flex;
+    background-color: #f1f5f9;
+    padding: 4px;
+    border-radius: 10px;
+    gap: 4px;
+}
+
+.sys-filter-btn {
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 7px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    color: var(--sys-text-secondary);
+    background: transparent;
+}
+
+.sys-filter-btn.active {
+    background-color: white;
+    color: var(--sys-blue);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.sys-search-input-wrapper {
+    position: relative;
+    width: 280px;
+}
+
+.sys-search-input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border: 1px solid var(--sys-border);
+    border-radius: var(--sys-radius-md);
+    font-size: 13px;
+    background-color: white;
+    transition: all 0.2s;
+}
+
+.sys-search-input:focus {
+    outline: none;
+    border-color: var(--sys-blue);
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* Table Refinements */
+.sys-table-row-compact td {
+    padding: 12px 20px;
+}
+
+.sys-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
 }
 
 /* Table System - Apple/Linear inspired */
