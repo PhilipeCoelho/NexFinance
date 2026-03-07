@@ -256,16 +256,13 @@ export class FinancialEngine {
                     const status = this.getEffectiveTransactionStatus(t, month);
 
                     if (status === 'forecast') {
-                        const dateParts = t.date.split('-');
+                        // Incluir todos os eventos previstos ('forecast'). 
+                        // Itens atrasados no mês atual também devem ser incluídos pois 
+                        // ainda não afetaram o saldo real (currentRealLiquidity).
+                        const dateParts = (t.date || '').split('-');
                         const rawDay = dateParts[2] || '01';
-                        // Forçar sempre 2 dígitos no dia
                         const day = String(parseInt(rawDay)).padStart(2, '0');
                         const eventDate = `${month}-${day}`;
-
-                        // Ignorar datas passadas no mês atual
-                        if (month === currentMonthStr && eventDate < todayStr) {
-                            return;
-                        }
 
                         allPotentialEvents.push({
                             id: `${t.id}-${month}`,
@@ -345,43 +342,46 @@ export class FinancialEngine {
         const currentRealLiquidity = this.calculateRealLiquidity(accounts);
         const todayMonth = this.getLisbonDate('month');
 
-        if (targetMonth <= todayMonth) {
-            return currentRealLiquidity;
-        }
-
-        let accumulatedProjection = 0;
-        let currentIterMonth = todayMonth;
-        let safetyCounter = 0;
-
-        // Máximo de 120 iterações (10 anos) para evitar loop infinito
-        while (currentIterMonth < targetMonth && safetyCounter < 120) {
-            safetyCounter++;
-            const monthlyTxs = transactions.filter(t => this.isTransactionInMonth(t, currentIterMonth));
-
-            const monthlyPendingIncome = monthlyTxs
-                .filter(t => t.type === 'income' && !t.isIgnored && this.getEffectiveTransactionStatus(t, currentIterMonth) === 'forecast')
-                .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
-
-            const monthlyPendingExpense = monthlyTxs
-                .filter(t => t.type === 'expense' && !t.isIgnored && this.getEffectiveTransactionStatus(t, currentIterMonth) === 'forecast')
-                .reduce((sum, t) => sum + (Number(t.value) || 0), 0);
-
-            accumulatedProjection += (monthlyPendingIncome - monthlyPendingExpense);
-
-            let parts = currentIterMonth.split('-').map(Number);
-            let y = parts[0];
-            let m = parts[1];
-
-            if (isNaN(y) || isNaN(m)) break; // Crash prevent
-
-            m += 1;
-            if (m > 12) {
-                m = 1;
-                y += 1;
+        // 1. Calcular o saldo no início do mês ATUAL
+        // Precisamos desfazer transações confirmadas deste mês para ter um ponto de partida estável
+        let balanceStartOfCurrentMonth = currentRealLiquidity;
+        transactions.forEach(t => {
+            if (t.isIgnored) return;
+            // Desfazemos apenas transações confirmadas que têm data no mês atual
+            if (t.status === 'confirmed' && (t.date || '').startsWith(todayMonth)) {
+                const val = Number(t.value) || 0;
+                balanceStartOfCurrentMonth += (t.type === 'expense' ? val : (t.type === 'income' ? -val : 0));
             }
-            currentIterMonth = `${y}-${m.toString().padStart(2, '0')}`;
+        });
+
+        // Se o alvo for o mês atual ou passado, retornamos o início do mês atual
+        // (Isso garante que Initial + Incomes - Expenses = End balance do mês)
+        if (targetMonth <= todayMonth) {
+            return balanceStartOfCurrentMonth;
         }
 
-        return currentRealLiquidity + accumulatedProjection;
+        // 2. Propagar do início do mês atual até o início do targetMonth
+        // Somando TODAS as transações (confirmadas e previstas) dos meses intermediários
+        let runningBalance = balanceStartOfCurrentMonth;
+        let iterMonth = todayMonth;
+        let safety = 0;
+
+        while (iterMonth < targetMonth && safety < 120) {
+            safety++;
+            const monthTxs = transactions.filter(t => !t.isIgnored && this.isTransactionInMonth(t, iterMonth));
+            monthTxs.forEach(t => {
+                const val = Number(t.value) || 0;
+                const modifier = (t.type === 'income' ? 1 : (t.type === 'expense' ? -1 : 0));
+                runningBalance += (val * modifier);
+            });
+
+            // Avançar mês: YYYY-MM
+            let [y, m] = iterMonth.split('-').map(Number);
+            m++;
+            if (m > 12) { m = 1; y++; }
+            iterMonth = `${y}-${String(m).padStart(2, '0')}`;
+        }
+
+        return runningBalance;
     }
 }
