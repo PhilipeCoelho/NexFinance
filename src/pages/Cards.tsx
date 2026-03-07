@@ -12,9 +12,11 @@ import {
     ArrowUp,
     ArrowDown,
     Calendar,
-    Check
+    Check,
+    CheckCircle2
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
+import PageLayout from '@/components/PageLayout';
 
 const Cards: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -43,133 +45,120 @@ const Cards: React.FC = () => {
 
     if (!data) return null;
 
+    const summaryPanel = (
+        <>
+            <div className="sys-card sys-summary-item">
+                <div className="sys-summary-info">
+                    <span className="sys-summary-label">Limite Total</span>
+                    <span className="sys-summary-value" style={{ color: '#8b5cf6' }}>{formatCurrency(stats.totalLimit)}</span>
+                </div>
+                <div className="sys-summary-icon-box" style={{ backgroundColor: '#8b5cf6' }}><Scale size={24} /></div>
+            </div>
+            <div className="sys-card sys-summary-item">
+                <div className="sys-summary-info">
+                    <span className="sys-summary-label">Limite Utilizado</span>
+                    <span className="sys-summary-value color-red">{formatCurrency(stats.used)}</span>
+                </div>
+                <div className="sys-summary-icon-box bg-red"><ArrowUp size={24} /></div>
+            </div>
+            <div className="sys-card sys-summary-item">
+                <div className="sys-summary-info">
+                    <span className="sys-summary-label">Limite Disponível</span>
+                    <span className="sys-summary-value color-green">{formatCurrency(stats.available)}</span>
+                </div>
+                <div className="sys-summary-icon-box bg-green"><ArrowDown size={24} /></div>
+            </div>
+        </>
+    );
+
     return (
-        <div className="expenses-page-mobills fade-in">
-            <header className="mobills-page-header">
-                <div className="header-left">
-                    <div className="breadcrumb-pill" style={{ background: '#f5f3ff' }}>
-                        <div className="icon-purple" style={{ background: '#8b5cf6', color: 'white', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CardIcon size={14} />
-                        </div>
-                        <span className="breadcrumb-text" style={{ color: '#8b5cf6' }}>Cartões</span>
-                        <ChevronRight size={14} opacity={0.3} />
+        <PageLayout title="Cartões" summaryPanel={summaryPanel}>
+            <div className="sys-card">
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '16px' }}>
+                    <div style={{ position: 'relative' }}>
+                        <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 10 }} />
+                        <input
+                            type="text"
+                            placeholder="Buscar..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            style={{ padding: '8px 16px 8px 36px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', width: '250px' }}
+                        />
                     </div>
                 </div>
 
-                <div className="header-right">
-                    <button className="btn-add-mobills" style={{ color: '#8b5cf6' }}>
-                        <Plus size={14} /> NOVO CARTÃO
-                    </button>
-                    <button className="icon-action-btn"><Search size={18} /></button>
-                    <button className="icon-action-btn"><Filter size={18} /></button>
-                    <button className="icon-action-btn"><MoreVertical size={18} /></button>
-                </div>
-            </header>
+                <table className="sys-table">
+                    <thead>
+                        <tr>
+                            <th style={{ width: '50px' }}>Status</th>
+                            <th>Cartão</th>
+                            <th>Vencimento / Fechamento</th>
+                            <th style={{ textAlign: 'right' }}>Limite Disponível</th>
+                            <th style={{ textAlign: 'right' }}>Fatura Aberta</th>
+                            <th style={{ textAlign: 'right', width: '120px' }}>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredCards.map(card => {
+                            const currentInvoice = data.invoices?.find(inv => inv.creditCardId === card.id && inv.status === 'open');
+                            const invoiceValue = currentInvoice ? currentInvoice.totalValue : 0;
+                            const percentUsed = (card.limitTotal - card.limitAvailable) / card.limitTotal * 100;
 
-            <main className="mobills-main-content">
-                <div className="work-area">
-                    <div className="mobills-table-card">
-                        <table className="mobills-table">
-                            <thead>
-                                <tr>
-                                    <th style={{ width: '60px' }}>Status</th>
-                                    <th>Cartão</th>
-                                    <th>Fechamento / Vencimento</th>
-                                    <th className="text-right">Limite Disponível</th>
-                                    <th className="text-right">Fatura</th>
-                                    <th style={{ width: '150px' }} className="text-right">Ações</th>
+                            return (
+                                <tr key={card.id}>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {card.status === 'active' ? (
+                                                <CheckCircle2 size={18} className="color-green" />
+                                            ) : (
+                                                <CheckCircle2 size={18} color="#cbd5e1" />
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <div style={{ width: 4, height: 24, borderRadius: 2, backgroundColor: card.color }}></div>
+                                            <span style={{ fontWeight: 600, color: '#1a1d21' }}>{card.name}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{ fontSize: '13px', color: '#64748b' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span>Vence: {card.dueDay}</span>
+                                            <span style={{ fontSize: '11px' }}>Fecha: {card.closingDay}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                            <span className="sys-table-val" style={{ color: '#1a1d21' }}>{formatCurrency(card.limitAvailable)}</span>
+                                            <div style={{ width: '80px', height: '4px', backgroundColor: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: percentUsed + '%', backgroundColor: percentUsed > 80 ? 'var(--sys-red)' : '#8b5cf6' }} />
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <span className="sys-table-val color-red">
+                                            {formatCurrency(invoiceValue)}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                            <button style={{ background: 'transparent', border: 'none', cursor: 'pointer' }} title="Pagar Fatura"><Calendar size={16} color="#94a3b8" /></button>
+                                            <button style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Edit3 size={16} color="#94a3b8" /></button>
+                                            <button onClick={() => deleteCreditCard(card.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Trash2 size={16} color="#94a3b8" /></button>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {filteredCards.map(card => {
-                                    const currentInvoice = data.invoices?.find(inv => inv.creditCardId === card.id && inv.status === 'open');
-                                    const usagePercent = ((card.limitTotal - card.limitAvailable) / card.limitTotal) * 100;
-
-                                    return (
-                                        <tr key={card.id} className="mobills-row">
-                                            <td>
-                                                <div className="status-icon success" style={{ background: card.status === 'active' ? 'var(--mobills-green)' : '#cbd5e0' }}>
-                                                    <Check size={14} />
-                                                </div>
-                                            </td>
-                                            <td className="desc-cell">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="card-color-strip" style={{ background: card.color, width: '4px', height: '32px', borderRadius: '2px' }}></div>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-bold text-sm">{card.name}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div className="flex flex-col text-xs font-semibold text-slate-600">
-                                                    <span>Fecha dia: {card.closingDay}</span>
-                                                    <span>Vence dia: {card.dueDay}</span>
-                                                </div>
-                                            </td>
-                                            <td className="text-right">
-                                                <div className="flex flex-col items-end">
-                                                    <span className="text-sm font-bold text-slate-700">{formatCurrency(card.limitAvailable)}</span>
-                                                    <div className="w-24 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
-                                                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${100 - usagePercent}%` }}></div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="value-cell text-right" style={{ color: 'var(--mobills-red)' }}>
-                                                {currentInvoice ? formatCurrency(currentInvoice.totalValue) : formatCurrency(0)}
-                                            </td>
-                                            <td className="actions-cell text-right">
-                                                <div className="actions-group">
-                                                    <button title="Pagar Fatura"><Calendar size={16} /></button>
-                                                    <button title="Editar"><Edit3 size={16} /></button>
-                                                    <button onClick={() => deleteCreditCard(card.id)} title="Excluir"><Trash2 size={16} /></button>
-                                                    <button><MoreVertical size={16} /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-
-                        {filteredCards.length === 0 && (
-                            <div className="empty-state-mobills">
-                                Nenhum cartão cadastrado.
-                            </div>
-                        )}
-
-                        <footer className="table-pagination">
-                            <span>1-{filteredCards.length} de {filteredCards.length}</span>
-                        </footer>
+                            );
+                        })}
+                    </tbody>
+                </table>
+                {filteredCards.length === 0 && (
+                    <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                        Nenhum cartão encontrado.
                     </div>
-                </div>
-
-                <aside className="summary-sidebar">
-                    <div className="summary-card-mobills">
-                        <div className="info">
-                            <span className="label">Limite Total <ChevronRight size={10} /></span>
-                            <span className="value bold">{formatCurrency(stats.totalLimit)}</span>
-                        </div>
-                        <div className="icon-bg" style={{ background: '#8b5cf6' }}><Scale size={20} /></div>
-                    </div>
-
-                    <div className="summary-card-mobills">
-                        <div className="info">
-                            <span className="label">Limite Utilizado <ChevronRight size={10} /></span>
-                            <span className="value" style={{ color: 'var(--mobills-red)' }}>{formatCurrency(stats.used)}</span>
-                        </div>
-                        <div className="icon-bg red" style={{ background: 'var(--mobills-red)' }}><ArrowUp size={20} /></div>
-                    </div>
-
-                    <div className="summary-card-mobills">
-                        <div className="info">
-                            <span className="label">Limite Disponível <ChevronRight size={10} /></span>
-                            <span className="value green" style={{ color: 'var(--mobills-green)' }}>{formatCurrency(stats.available)}</span>
-                        </div>
-                        <div className="icon-bg green" style={{ background: 'var(--mobills-green)' }}><ArrowDown size={20} /></div>
-                    </div>
-                </aside>
-            </main>
-        </div>
+                )}
+            </div>
+        </PageLayout>
     );
 };
 

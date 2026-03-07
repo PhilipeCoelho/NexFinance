@@ -1,54 +1,41 @@
 import React from 'react';
-import { Tags, Plus, ChevronRight, Filter, Search, MoreVertical, TrendingUp, TrendingDown, Scale } from 'lucide-react';
+import { Tags, Plus, TrendingUp, TrendingDown } from 'lucide-react';
+import PageLayout from '@/components/PageLayout';
 
 const Categories: React.FC = () => {
+    const summaryPanel = (
+        <>
+            <div className="sys-card sys-summary-item">
+                <div className="sys-summary-info">
+                    <span className="sys-summary-label">Receita</span>
+                    <span className="sys-summary-value color-green">20 Categorias</span>
+                </div>
+                <div className="sys-summary-icon-box bg-green"><TrendingUp size={24} /></div>
+            </div>
+            <div className="sys-card sys-summary-item">
+                <div className="sys-summary-info">
+                    <span className="sys-summary-label">Despesa</span>
+                    <span className="sys-summary-value color-red">45 Categorias</span>
+                </div>
+                <div className="sys-summary-icon-box bg-red"><TrendingDown size={24} /></div>
+            </div>
+        </>
+    );
+
     return (
-        <div className="expenses-page-mobills fade-in">
-            <header className="mobills-page-header">
-                <div className="header-left">
-                    <div className="breadcrumb-pill" style={{ background: '#fff7ed' }}>
-                        <div className="icon-orange" style={{ background: '#ed8936', color: 'white', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <Tags size={14} />
-                        </div>
-                        <span className="breadcrumb-text" style={{ color: '#ed8936' }}>Categorias</span>
-                        <ChevronRight size={14} opacity={0.3} />
-                    </div>
-                </div>
-                <div className="header-right">
-                    <button className="btn-add-mobills" style={{ color: '#ed8936' }}>
-                        <Plus size={14} /> NOVA CATEGORIA
-                    </button>
-                    <button className="icon-action-btn"><Search size={18} /></button>
-                    <button className="icon-action-btn"><Filter size={18} /></button>
-                    <button className="icon-action-btn"><MoreVertical size={18} /></button>
-                </div>
-            </header>
-            <main className="mobills-main-content">
-                <div className="work-area">
-                    <div className="mobills-table-card p-12 text-center text-slate-400">
-                        <Tags size={48} className="mx-auto mb-4 opacity-20" />
-                        <p className="font-bold">Gerencie suas categorias.</p>
-                        <p className="text-xs">Agrupe suas transações por tipo.</p>
-                    </div>
-                </div>
-                <aside className="summary-sidebar">
-                    <div className="summary-card-mobills">
-                        <div className="info">
-                            <span className="label">Receita <ChevronRight size={10} /></span>
-                            <span className="value bold text-green-500">20 Categorias</span>
-                        </div>
-                        <div className="icon-bg green" style={{ background: 'var(--mobills-green)' }}><TrendingUp size={20} /></div>
-                    </div>
-                    <div className="summary-card-mobills">
-                        <div className="info">
-                            <span className="label">Despesa <ChevronRight size={10} /></span>
-                            <span className="value bold text-red-500">45 Categorias</span>
-                        </div>
-                        <div className="icon-bg red" style={{ background: 'var(--mobills-red)' }}><TrendingDown size={20} /></div>
-                    </div>
-                </aside>
-            </main>
-        </div>
+        <PageLayout title="Categorias" summaryPanel={summaryPanel}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                <button className="sys-btn-primary">
+                    <Plus size={16} /> NOVA CATEGORIA
+                </button>
+            </div>
+
+            <div className="sys-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
+                <Tags size={48} color="#cbd5e1" style={{ margin: '0 auto 16px auto' }} />
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1a1d21', marginBottom: 8 }}>Gerencie suas categorias</h3>
+                <p style={{ fontSize: 14, color: '#64748b' }}>Agrupe suas transações por tipo.</p>
+            </div>
+        </PageLayout>
     );
 };
 

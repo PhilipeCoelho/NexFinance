@@ -20,12 +20,15 @@ import {
   EyeOff,
   Activity,
   Paperclip,
-  Infinity
+  Infinity,
+  CheckCircle2,
+  Repeat
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
+import PageLayout from '@/components/PageLayout';
 
 const Transactions: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -209,230 +212,117 @@ const Transactions: React.FC = () => {
 
   if (!data) return null;
 
+  const summaryPanel = (
+    <>
+      <div className="sys-card sys-summary-item">
+        <div className="sys-summary-info">
+          <span className="sys-summary-label">Receitas</span>
+          <span className="sys-summary-value color-green">{formatCurrency(stats.income)}</span>
+        </div>
+        <div className="sys-summary-icon-box bg-green"><TrendingUp size={24} /></div>
+      </div>
+      <div className="sys-card sys-summary-item">
+        <div className="sys-summary-info">
+          <span className="sys-summary-label">Despesas</span>
+          <span className="sys-summary-value color-red">{formatCurrency(stats.expenses)}</span>
+        </div>
+        <div className="sys-summary-icon-box bg-red"><TrendingDown size={24} /></div>
+      </div>
+      <div className="sys-card sys-summary-item">
+        <div className="sys-summary-info">
+          <span className="sys-summary-label">Saldo</span>
+          <span className="sys-summary-value color-blue">{formatCurrency(stats.balance)}</span>
+        </div>
+        <div className="sys-summary-icon-box bg-blue"><Scale size={24} /></div>
+      </div>
+    </>
+  );
+
   return (
-    <div className="expenses-page-mobills fade-in">
-      <main className="mobills-main-content">
-        <div className="work-area">
-          <header className="page-header-mobills" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '0' }}>
-            <div className="header-left">
-              <button className="category-pill-dropdown-mob">
-                <Activity size={18} className="mr-2" />
-                Transações
-                <ChevronDown size={14} className="ml-2" />
-              </button>
-            </div>
-            <div className="header-actions-mob">
-              <button className="btn-nova-despesa-mob" onClick={() => setIsModalOpen(true)}>
-                <Plus size={16} className="mr-2" />
-                NOVA TRANSAÇÃO
-              </button>
-              <button className="header-icon-btn-mob"><Search size={18} /></button>
-              <button className="header-icon-btn-mob"><Filter size={18} /></button>
-              <button className="header-icon-btn-mob"><MoreVertical size={18} /></button>
-            </div>
-          </header>
-
-          <div className="month-navigator-mob" style={{ marginBottom: '16px' }}>
-            <button className="nav-arrow-mob" onClick={prevMonth}><ChevronLeft size={20} /></button>
-            <div className="month-display-mob" style={{ border: '1px solid #f87171', color: '#f87171', minWidth: '120px' }}>
-              {format(currentMonthDate, "MMMM yyyy", { locale: ptBR })}
-            </div>
-            <button className="nav-arrow-mob" onClick={nextMonth}><ChevronRight size={20} /></button>
-          </div>
-
-          {showDeletePrompt && (
-            <div className="modal-overlay" onClick={() => setShowDeletePrompt(false)}>
-              <div className="mobills-modal glass fade-in" style={{ width: '350px', padding: '32px' }} onClick={e => e.stopPropagation()}>
-                <div style={{ textAlign: 'center' }}>
-                  <div style={{
-                    background: 'rgba(248, 113, 113, 0.1)',
-                    width: '64px', height: '64px',
-                    borderRadius: '20px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 20px'
-                  }}>
-                    <Trash2 size={32} color="var(--mobills-red)" />
-                  </div>
-                  <h3 style={{ fontWeight: 800, fontSize: '20px', marginBottom: '12px', color: 'var(--text-primary)' }}>Excluir transação</h3>
-                  <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '28px', lineHeight: '1.5' }}>
-                    Esta é uma transação repetida.<br />O que você deseja excluir?
-                  </p>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <button className="btn-mobills-save expense" style={{ width: '100%' }} onClick={() => confirmDelete('single')}>APENAS ESTE MÊS</button>
-                    <button className="btn-mobills-save neutral" style={{ width: '100%' }} onClick={() => confirmDelete('all')}>TODOS OS MESES</button>
-                    <button className="btn-text-only" style={{ marginTop: '8px' }} onClick={() => setShowDeletePrompt(false)}>Cancelar</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="mobills-table-card">
-            <table className="mobills-table">
-              <thead>
-                <tr>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('status')}>
-                    SIT {getSortIcon('status')}
-                  </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('date')}>
-                    DATA {getSortIcon('date')}
-                  </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('description')}>
-                    DESCRIÇÃO {getSortIcon('description')}
-                  </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('categoryId')}>
-                    CATEGORIA {getSortIcon('categoryId')}
-                  </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('accountId')}>
-                    CONTA {getSortIcon('accountId')}
-                  </th>
-                  <th style={{ textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('value')}>
-                    VALOR {getSortIcon('value')}
-                  </th>
-                  <th style={{ textAlign: 'right' }}>AÇÕES</th>
-                </tr>
-              </thead>
-              <tbody>
-                {finalDisplayTransactions.map(t => (
-                  <tr key={t.id} className={t.isIgnored ? "mobills-row ignored" : "mobills-row"}>
-                    <td className="status-cell">
-                      <div className="status-indicator-wrapper">
-                        {t.status === 'confirmed' ? (
-                          <div className="status-indicator-filled confirmed">
-                            <Check size={14} strokeWidth={3} />
-                          </div>
-                        ) : (
-                          <div className="status-indicator-filled pending">
-                            <span style={{ fontWeight: 900, fontSize: '14px' }}>!</span>
-                          </div>
-                        )}
-                        {t.isFixed && (
-                          <div className="recurring-mini-icon" title="Fixo">
-                            <Infinity size={10} />
-                          </div>
-                        )}
-                        {t.isRecurring && (
-                          <div className="installment-badge" title="Parcelado">
-                            {getInstallmentInfo(t, viewMonth)}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="date-cell">
-                      {format(new Date(getAdjustedDate(t.date, viewMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
-                    </td>
-                    <td className="desc-cell">
-                      <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span className="desc-text">{t.description}</span>
-                        {t.notes && <span className="notes-preview" style={{ fontSize: '10px', color: '#94a3b8', marginTop: '2px', fontStyle: 'italic' }}>{t.notes}</span>}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="cat-cell">
-                        <div className="cat-bullet" style={{ background: t.type === 'income' ? 'var(--mobills-green)' : 'var(--mobills-red)' }}></div>
-                        {data.categories.find(c => c.id === t.categoryId)?.name || 'Outros'}
-                      </div>
-                    </td>
-                    <td className="account-cell">{data.accounts.find(a => a.id === t.accountId)?.name || 'Carteira'}</td>
-                    <td className="value-cell text-right">
-                      <span className={t.type === 'income' ? 'value-num green' : 'value-num red'}>
-                        {formatCurrency(t.value)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="actions-cell">
-                        <button
-                          onClick={() => {
-                            const isRecurring = t.isFixed || t.isRecurring;
-                            updateTransaction(
-                              t.id,
-                              { status: t.status === 'confirmed' ? 'forecast' : 'confirmed' },
-                              isRecurring ? 'single' : 'all',
-                              viewMonth
-                            );
-                          }}
-                          title="Confirmar"
-                        >
-                          <Check size={16} color={t.status === 'confirmed' ? '#10b981' : '#cbd5e1'} />
-                        </button>
-                        <button onClick={() => updateTransaction(t.id, { isIgnored: !t.isIgnored })} title={t.isIgnored ? "Considerar" : "Ignorar"}>
-                          {t.isIgnored ? <EyeOff size={16} color="var(--mobills-red)" /> : <Eye size={16} />}
-                        </button>
-                        <button onClick={() => handleEdit(t)} title="Editar"><Edit3 size={16} /></button>
-                        <button onClick={() => handleDeleteTrigger(t)} title="Excluir"><Trash2 size={16} /></button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-
-                {!showIgnored && ignoredCount > 0 && (
-                  <tr className="ignored-summary-row" onClick={() => setShowIgnored(true)}>
-                    <td colSpan={7}>
-                      <div className="ignored-summary-content">
-                        <EyeOff size={14} className="mr-2" />
-                        <span>{ignoredCount} {ignoredCount === 1 ? 'transação ignorada' : 'transações ignoradas'} ocultas</span>
-                        <button className="reveal-btn">MOSTRAR</button>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-
-                {showIgnored && ignoredCount > 0 && (
-                  <tr className="ignored-summary-row active" onClick={() => setShowIgnored(false)}>
-                    <td colSpan={7}>
-                      <div className="ignored-summary-content">
-                        <Eye size={14} className="mr-2" />
-                        <span>Ocultar transações ignoradas</span>
-                        <button className="reveal-btn">OCULTAR</button>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-
-            {filteredTransactions.length === 0 && (
-              <div className="empty-state-mobills">
-                Nenhuma transação para este mês.
-              </div>
-            )}
-
-            <footer className="pagination-footer-lite">
-              <span>Linhas por página: 50</span>
-              <span>1-{filteredTransactions.length} de {filteredTransactions.length}</span>
-            </footer>
+    <PageLayout title="Todas as Transações" summaryPanel={summaryPanel}>
+      <div className="sys-card">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: 12, top: 10 }} />
+            <input
+              type="text"
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ padding: '8px 16px 8px 36px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '13px', width: '250px' }}
+            />
           </div>
         </div>
 
-        <aside className="summary-sidebar">
-          <div className="summary-card-mobills">
-            <div className="info">
-              <span className="label">Receitas <ChevronRight size={10} /></span>
-              <span className="value">{formatCurrency(stats.income)}</span>
-            </div>
-            <div className="icon-bg green"><ArrowUp size={20} /></div>
-          </div>
+        <table className="sys-table">
+          <thead>
+            <tr>
+              <th onClick={() => handleSort('status')} style={{ cursor: 'pointer', width: '50px' }}>Sit {getSortIcon('status')}</th>
+              <th onClick={() => handleSort('date')} style={{ cursor: 'pointer', width: '100px' }}>Data {getSortIcon('date')}</th>
+              <th onClick={() => handleSort('description')} style={{ cursor: 'pointer' }}>Descrição {getSortIcon('description')}</th>
+              <th onClick={() => handleSort('categoryId')} style={{ cursor: 'pointer' }}>Categoria {getSortIcon('categoryId')}</th>
+              <th onClick={() => handleSort('accountId')} style={{ cursor: 'pointer' }}>Conta {getSortIcon('accountId')}</th>
+              <th onClick={() => handleSort('value')} style={{ cursor: 'pointer', textAlign: 'right' }}>Valor {getSortIcon('value')}</th>
+              <th style={{ textAlign: 'right', width: '120px' }}>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {finalDisplayTransactions.map(t => (
+              <tr key={t.id} style={{ opacity: t.isIgnored ? 0.5 : 1 }}>
+                <td>
+                  <div style={{ position: 'relative', display: 'inline-flex' }}>
+                    {t.status === 'confirmed' ? (
+                      <CheckCircle2 size={18} className={t.type === 'income' ? 'color-green' : 'color-blue'} />
+                    ) : (
+                      <AlertCircle size={18} className="color-yellow" />
+                    )}
+                    {t.isFixed && <Infinity size={10} style={{ position: 'absolute', bottom: -4, right: -4, color: '#64748b' }} />}
+                    {t.isRecurring && <Repeat size={10} style={{ position: 'absolute', bottom: -4, right: -4, color: '#64748b' }} />}
+                  </div>
+                </td>
+                <td style={{ color: '#64748b', fontSize: '13px' }}>
+                  {format(new Date(getAdjustedDate(t.date, viewMonth) + 'T12:00:00'), 'dd/MM/yyyy')}
+                </td>
+                <td>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontWeight: 500, color: '#1a1d21' }}>{t.description}</span>
+                    {t.notes && <span style={{ fontSize: '11px', color: '#94a3b8' }}>{t.notes}</span>}
+                  </div>
+                </td>
+                <td style={{ fontSize: '13px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: t.type === 'income' ? 'var(--sys-green)' : 'var(--sys-red)' }} />
+                    {data.categories.find(c => c.id === t.categoryId)?.name || 'Outros'}
+                  </div>
+                </td>
+                <td style={{ fontSize: '13px', color: '#64748b' }}>
+                  {data.accounts.find(a => a.id === t.accountId)?.name || 'Carteira'}
+                </td>
+                <td style={{ textAlign: 'right' }}>
+                  <span className={`sys-table-val ${t.type === 'income' ? 'color-green' : 'color-red'}`}>
+                    {formatCurrency(t.value)}
+                  </span>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                    <button onClick={() => updateTransaction(t.id, { status: t.status === 'confirmed' ? 'forecast' : 'confirmed' }, (t.isFixed || t.isRecurring) ? 'single' : 'all', viewMonth)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                      <Check size={16} color={t.status === 'confirmed' ? '#10b981' : '#cbd5e1'} />
+                    </button>
+                    <button onClick={() => handleEdit(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Edit3 size={16} color="#94a3b8" /></button>
+                    <button onClick={() => handleDeleteTrigger(t)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}><Trash2 size={16} color="#94a3b8" /></button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-          <div className="summary-card-mobills">
-            <div className="info">
-              <span className="label">Despesas <ChevronRight size={10} /></span>
-              <span className="value">{formatCurrency(stats.expenses)}</span>
-            </div>
-            <div className="icon-bg red"><ArrowDown size={20} /></div>
+        {finalDisplayTransactions.length === 0 && (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+            Nenhuma transação encontrada no período.
           </div>
-
-          <div className="summary-card-mobills">
-            <div className="info">
-              <span className="label">Balanço <ChevronRight size={10} /></span>
-              <span className="value">{formatCurrency(stats.balance)}</span>
-            </div>
-            <div className="icon-bg" style={{ background: 'var(--mobills-red)' }}><Scale size={20} /></div>
-          </div>
-        </aside>
-      </main>
+        )}
+      </div>
 
       <TransactionModal
         isOpen={isModalOpen}
@@ -440,7 +330,22 @@ const Transactions: React.FC = () => {
         editingTransaction={transactionToEdit}
         activeMonth={viewMonth}
       />
-    </div>
+
+      {showDeletePrompt && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div className="sys-card" style={{ width: 350, textAlign: 'center' }}>
+            <Trash2 size={32} className="color-red" style={{ margin: '0 auto 16px auto' }} />
+            <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Excluir transação repetida?</h3>
+            <p style={{ fontSize: 13, color: '#64748b', marginBottom: 24 }}>Como deseja prosseguir com a exclusão?</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button className="sys-btn-primary" style={{ backgroundColor: '#1a1d21', justifyContent: 'center' }} onClick={() => confirmDelete('single')}>APENAS DESTE MÊS</button>
+              <button className="sys-btn-primary" style={{ backgroundColor: 'var(--sys-red)', justifyContent: 'center' }} onClick={() => confirmDelete('all')}>TODOS OS MESES</button>
+              <button onClick={() => setShowDeletePrompt(false)} style={{ background: 'transparent', border: 'none', marginTop: 12, fontSize: 13, color: '#64748b', cursor: 'pointer', fontWeight: 600 }}>Cancelar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </PageLayout>
   );
 };
 

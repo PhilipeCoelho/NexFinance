@@ -1,54 +1,41 @@
 import React from 'react';
-import { PieChart, Plus, ChevronRight, Filter, Search, MoreVertical, TrendingDown, Scale } from 'lucide-react';
+import { PieChart, Plus, TrendingDown, Scale } from 'lucide-react';
+import PageLayout from '@/components/PageLayout';
 
 const Planning: React.FC = () => {
+    const summaryPanel = (
+        <>
+            <div className="sys-card sys-summary-item">
+                <div className="sys-summary-info">
+                    <span className="sys-summary-label">Orçamento Total</span>
+                    <span className="sys-summary-value">R$ 0,00</span>
+                </div>
+                <div className="sys-summary-icon-box bg-green"><Scale size={24} /></div>
+            </div>
+            <div className="sys-card sys-summary-item">
+                <div className="sys-summary-info">
+                    <span className="sys-summary-label">Restante Livre</span>
+                    <span className="sys-summary-value" style={{ color: '#3b82f6' }}>R$ 0,00</span>
+                </div>
+                <div className="sys-summary-icon-box" style={{ backgroundColor: '#2563eb' }}><TrendingDown size={24} color="white" /></div>
+            </div>
+        </>
+    );
+
     return (
-        <div className="expenses-page-mobills fade-in">
-            <header className="mobills-page-header">
-                <div className="header-left">
-                    <div className="breadcrumb-pill" style={{ background: '#f0fdf4' }}>
-                        <div className="icon-green" style={{ background: '#38a169', color: 'white', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <PieChart size={14} />
-                        </div>
-                        <span className="breadcrumb-text" style={{ color: '#38a169' }}>Planejamento</span>
-                        <ChevronRight size={14} opacity={0.3} />
-                    </div>
-                </div>
-                <div className="header-right">
-                    <button className="btn-add-mobills" style={{ color: '#38a169' }}>
-                        <Plus size={14} /> NOVO PLANO
-                    </button>
-                    <button className="icon-action-btn"><Search size={18} /></button>
-                    <button className="icon-action-btn"><Filter size={18} /></button>
-                    <button className="icon-action-btn"><MoreVertical size={18} /></button>
-                </div>
-            </header>
-            <main className="mobills-main-content">
-                <div className="work-area">
-                    <div className="mobills-table-card p-12 text-center text-slate-400">
-                        <PieChart size={48} className="mx-auto mb-4 opacity-20" />
-                        <p className="font-bold">Planeje seu orçamento mensal.</p>
-                        <p className="text-xs">Defina limites de gastos por categoria.</p>
-                    </div>
-                </div>
-                <aside className="summary-sidebar">
-                    <div className="summary-card-mobills">
-                        <div className="info">
-                            <span className="label">Orçamento Total <ChevronRight size={10} /></span>
-                            <span className="value bold">R$ 0,00</span>
-                        </div>
-                        <div className="icon-bg" style={{ background: '#38a169' }}><Scale size={20} /></div>
-                    </div>
-                    <div className="summary-card-mobills">
-                        <div className="info">
-                            <span className="label">Restante Livre <ChevronRight size={10} /></span>
-                            <span className="value bold text-blue-500">R$ 0,00</span>
-                        </div>
-                        <div className="icon-bg" style={{ background: 'var(--accent-primary)' }}><TrendingDown size={20} /></div>
-                    </div>
-                </aside>
-            </main>
-        </div>
+        <PageLayout title="Planejamento" summaryPanel={summaryPanel}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+                <button className="sys-btn-primary">
+                    <Plus size={16} /> NOVO PLANO
+                </button>
+            </div>
+
+            <div className="sys-card" style={{ padding: '60px 20px', textAlign: 'center' }}>
+                <PieChart size={48} color="#cbd5e1" style={{ margin: '0 auto 16px auto' }} />
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: '#1a1d21', marginBottom: 8 }}>Planeje seu orçamento mensal</h3>
+                <p style={{ fontSize: 14, color: '#64748b' }}>Defina limites de gastos por categoria.</p>
+            </div>
+        </PageLayout>
     );
 };
 
