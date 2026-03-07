@@ -160,17 +160,19 @@ export class FinancialEngine {
      */
     static getLisbonDate(precision: 'month' | 'day' = 'day'): string {
         const d = new Date();
-        try {
-            // en-CA is YYYY-MM-DD, very reliable for parsing
-            const formatted = d.toLocaleDateString('en-CA', { timeZone: 'Europe/Lisbon' });
-            if (precision === 'month') return formatted.slice(0, 7);
-            return formatted;
-        } catch (e) {
-            // Fallback em caso de falha no engine de Intl (extremamente raro)
-            const fallback = d.toISOString();
-            if (precision === 'month') return fallback.slice(0, 7);
-            return fallback.slice(0, 10);
-        }
+        const formatter = new Intl.DateTimeFormat('pt-PT', {
+            timeZone: 'Europe/Lisbon',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const parts = formatter.formatToParts(d);
+        const y = parts.find(p => p.type === 'year')?.value;
+        const m = parts.find(p => p.type === 'month')?.value;
+        const dd = parts.find(p => p.type === 'day')?.value;
+
+        if (precision === 'month') return `${y}-${m}`;
+        return `${y}-${m}-${dd}`;
     }
 
     /**
@@ -210,7 +212,9 @@ export class FinancialEngine {
 
                     if (status === 'forecast') {
                         const dateParts = t.date.split('-');
-                        const day = dateParts[2] || '01';
+                        const rawDay = dateParts[2] || '01';
+                        // Forçar sempre 2 dígitos no dia
+                        const day = String(parseInt(rawDay)).padStart(2, '0');
                         const eventDate = `${month}-${day}`;
 
                         // Ignorar datas passadas no mês atual
