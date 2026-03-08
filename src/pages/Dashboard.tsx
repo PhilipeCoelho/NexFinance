@@ -481,12 +481,20 @@ const Dashboard: React.FC = () => {
                         <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>Próximos Vencimentos</h3>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {displayUpcoming.map((item, i) => (
-                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                            <span style={{ fontWeight: 600, color: '#475569' }}>{item.description}</span>
-                            <span style={{ fontWeight: 700, color: 'var(--sys-red)' }}>{formatCurrency(item.value)}</span>
-                          </div>
-                        ))}
+                        {displayUpcoming.map((item, i) => {
+                          const installmentText = FinancialEngine.getInstallmentText(item, referenceMonth);
+                          return (
+                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontWeight: 600, color: '#475569' }}>{item.description}</span>
+                                {installmentText && (
+                                  <span style={{ fontSize: '9px', color: 'var(--sys-blue)', fontWeight: 700 }}>Parcela {installmentText}</span>
+                                )}
+                              </div>
+                              <span style={{ fontWeight: 700, color: 'var(--sys-red)' }}>{formatCurrency(item.value)}</span>
+                            </div>
+                          );
+                        })}
                         {displayUpcoming.length === 0 && <span style={{ fontSize: '12px', color: '#94a3b8' }}>Sem débitos próximos</span>}
                       </div>
                     </div>

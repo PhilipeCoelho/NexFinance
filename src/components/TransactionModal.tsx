@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
 import { useForm } from 'react-hook-form';
+import { FinancialEngine } from '@/lib/FinancialEngine';
 
 interface TransactionFormData {
   type: 'income' | 'expense' | 'transfer';
@@ -252,7 +253,14 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
     <div className="modal-overlay" onClick={onClose}>
       <div className="mobills-modal shadow-premium" onClick={e => e.stopPropagation()}>
         <header className="mobills-modal-header">
-          <span className="modal-title">{editingTransaction ? 'Editar' : 'Nova'} {transactionType === 'expense' ? 'Despesa' : 'Receita'}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="modal-title">{editingTransaction ? 'Editar' : 'Nova'} {transactionType === 'expense' ? 'Despesa' : 'Receita'}</span>
+            {editingTransaction?.isRecurring && editingTransaction?.recurrence?.installmentsCount && (
+              <span style={{ fontSize: '10px', color: 'var(--sys-blue)', backgroundColor: 'var(--sys-bg-blue)', padding: '2px 8px', borderRadius: '12px', fontWeight: 800 }}>
+                {FinancialEngine.getInstallmentText(editingTransaction, effectiveMonth)}
+              </span>
+            )}
+          </div>
           <button className="close-x" onClick={onClose}><X size={18} /></button>
         </header>
 

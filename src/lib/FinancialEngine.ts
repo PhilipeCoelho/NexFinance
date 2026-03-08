@@ -336,6 +336,26 @@ export class FinancialEngine {
     }
 
     /**
+     * Retorna o texto da parcela (ex: 3/5) para uma transação em um mês específico.
+     */
+    static getInstallmentText(t: Transaction, monthStr: string): string | null {
+        if (!t.isRecurring || !t.recurrence?.installmentsCount || !t.date) return null;
+
+        const [refYear, refMonth] = monthStr.split('-').map(Number);
+        const tDateParts = t.date.split('-');
+        const tYear = parseInt(tDateParts[0]);
+        const tMonth = parseInt(tDateParts[1]);
+
+        if (isNaN(refYear) || isNaN(refMonth) || isNaN(tYear) || isNaN(tMonth)) return null;
+
+        const currentInstallment = (refYear - tYear) * 12 + (refMonth - tMonth) + 1;
+
+        if (currentInstallment < 1 || currentInstallment > t.recurrence.installmentsCount) return null;
+
+        return `${currentInstallment}/${t.recurrence.installmentsCount}`;
+    }
+
+    /**
      * Calcula o saldo inicial projetado para um mês específico.
      */
     static calculateProjectedInitialBalance(
