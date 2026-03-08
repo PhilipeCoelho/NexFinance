@@ -52,6 +52,10 @@ const App: React.FC = () => {
     }, [settings.theme]);
 
     useEffect(() => {
+        document.documentElement.setAttribute('data-ui-density', settings.uiDensity || 'compact');
+    }, [settings.uiDensity]);
+
+    useEffect(() => {
         // Initial session check
         supabase.auth.getSession()
             .then(({ data: { session } }) => {

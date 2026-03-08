@@ -31,6 +31,9 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const iconSize = settings.uiDensity === 'compact' ? 16 : settings.uiDensity === 'comfortable' ? 22 : 18;
+  const smallIconSize = settings.uiDensity === 'compact' ? 14 : settings.uiDensity === 'comfortable' ? 18 : 16;
+
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', id: 'dashboard', path: '/dashboard' },
     { icon: Activity, label: 'Fluxo Caixa', id: 'financial-flow', path: '/financial-flow' },
@@ -98,7 +101,7 @@ const Sidebar: React.FC = () => {
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
               onClick={() => navigate(item.path)}
             >
-              <item.icon size={18} color={item.id === 'income' ? 'var(--success)' : item.id === 'expenses' ? 'var(--error)' : 'currentColor'} />
+              <item.icon size={iconSize} color={item.id === 'income' ? 'var(--success)' : item.id === 'expenses' ? 'var(--error)' : 'currentColor'} />
               <span>{item.label}</span>
             </button>
           ))}
@@ -109,7 +112,7 @@ const Sidebar: React.FC = () => {
             className="nav-item theme-toggle"
             onClick={() => setTheme(settings.theme === 'light' ? 'dark' : 'light')}
           >
-            {settings.theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            {settings.theme === 'light' ? <Moon size={iconSize} /> : <Sun size={iconSize} />}
             <span>{settings.theme === 'light' ? 'Modo Escuro' : 'Modo Claro'}</span>
           </button>
 
@@ -122,7 +125,7 @@ const Sidebar: React.FC = () => {
               }
             }}
           >
-            <LogOut size={20} />
+            <LogOut size={iconSize} />
             <span>Sair da conta</span>
           </button>
 
@@ -241,7 +244,8 @@ const Sidebar: React.FC = () => {
           display: flex;
           align-items: center;
           gap: 15px;
-          padding: 10px;
+          height: var(--v-nav-item-h);
+          padding: 0 10px;
           color: var(--text-secondary);
           background: transparent;
           border-radius: 10px;
@@ -249,6 +253,8 @@ const Sidebar: React.FC = () => {
           min-width: 200px;
           transition: all 0.2s;
           position: relative;
+          font-size: var(--v-nav-font-s);
+          overflow: hidden;
         }
 
         .nav-item svg {

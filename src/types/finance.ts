@@ -123,6 +123,8 @@ export interface FinancialGoal {
 
 export type ContextType = 'personal' | 'business';
 
+export type UIDensity = 'compact' | 'default' | 'comfortable';
+
 export interface FinanceContextData {
     transactions: Transaction[];
     accounts: Account[];

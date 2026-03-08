@@ -52,6 +52,47 @@
     --sys-bg-purple: #faf5ff;
     --sys-bg-red: #fef2f2;
     --sys-bg-gray: #f8fafc;
+
+    /* Density Default Tokens (Padrão) */
+    --v-nav-item-h: 44px;
+    --v-nav-icon-s: 20px;
+    --v-nav-font-s: 14px;
+    --v-card-padding: 24px;
+    --v-table-row-h: 52px;
+    --v-btn-h: 40px;
+    --v-btn-pad: 0 20px;
+    --v-section-gap: 24px;
+    --v-kpi-val-s: 22px;
+    --v-header-h: 56px;
+    --v-table-pad: 14px 20px;
+}
+
+[data-ui-density="compact"] {
+    --v-nav-item-h: 36px;
+    --v-nav-icon-s: 16px;
+    --v-nav-font-s: 13px;
+    --v-card-padding: 16px;
+    --v-table-row-h: 40px;
+    --v-btn-h: 32px;
+    --v-btn-pad: 0 14px;
+    --v-section-gap: 16px;
+    --v-kpi-val-s: 18px;
+    --v-header-h: 48px;
+    --v-table-pad: 8px 16px;
+}
+
+[data-ui-density="comfortable"] {
+    --v-nav-item-h: 52px;
+    --v-nav-icon-s: 22px;
+    --v-nav-font-s: 15px;
+    --v-card-padding: 32px;
+    --v-table-row-h: 60px;
+    --v-btn-h: 48px;
+    --v-btn-pad: 0 24px;
+    --v-section-gap: 32px;
+    --v-kpi-val-s: 26px;
+    --v-header-h: 64px;
+    --v-table-pad: 18px 24px;
 }
 
 .dark {
@@ -113,7 +154,7 @@ body {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--sys-border);
-    height: 56px;
+    height: var(--v-header-h);
     flex-shrink: 0;
     position: sticky;
     top: 0;
@@ -152,7 +193,7 @@ body {
 
 .sys-financial-value {
     font-family: var(--sys-font-display);
-    font-size: 22px;
+    font-size: var(--v-kpi-val-s);
     font-weight: 800;
     letter-spacing: -0.04em;
 }
@@ -161,7 +202,8 @@ body {
 .sys-btn-primary {
     background: linear-gradient(135deg, var(--sys-blue) 0%, var(--sys-blue-hover) 100%);
     color: white;
-    padding: 10px 20px;
+    height: var(--v-btn-h);
+    padding: var(--v-btn-pad);
     border-radius: var(--sys-radius-md);
     font-size: 14px;
     font-weight: 600;
@@ -187,7 +229,8 @@ body {
 .sys-btn-secondary {
     background-color: var(--bg-primary);
     color: var(--sys-text-primary);
-    padding: 10px 20px;
+    height: var(--v-btn-h);
+    padding: var(--v-btn-pad);
     border-radius: var(--sys-radius-md);
     font-size: 14px;
     font-weight: 600;
@@ -209,7 +252,8 @@ body {
 .sys-btn-destructive {
     background-color: var(--sys-red);
     color: white;
-    padding: 10px 20px;
+    height: var(--v-btn-h);
+    padding: var(--v-btn-pad);
     border-radius: var(--sys-radius-md);
     font-size: 14px;
     font-weight: 600;
@@ -241,7 +285,7 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--sys-space-xl);
+    gap: var(--v-section-gap);
     min-height: 0;
     /* Critical for nested scrolling */
 }
@@ -288,7 +332,7 @@ body {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: var(--sys-radius-lg);
-    padding: 24px;
+    padding: var(--v-card-padding);
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 1);
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -315,7 +359,7 @@ body {
 /* KPI Items */
 .sys-kpi-value {
     font-family: var(--sys-font-display);
-    font-size: 22px;
+    font-size: var(--v-kpi-val-s);
     font-weight: 800;
     letter-spacing: -0.04em;
     margin: 4px 0;
@@ -356,7 +400,7 @@ body {
 /* Global Financial Styles */
 .sys-financial-value {
     font-family: var(--sys-font-display);
-    font-size: 22px;
+    font-size: var(--v-kpi-val-s);
     font-weight: 800;
     letter-spacing: -0.04em;
     margin: 4px 0;
@@ -427,7 +471,7 @@ body {
 
 /* Table Refinements */
 .sys-table-row-compact td {
-    padding: 12px 20px;
+    padding: var(--v-table-pad);
 }
 
 .sys-status-dot {
@@ -453,7 +497,7 @@ body {
 
 .sys-table th {
     text-align: left;
-    padding: 14px 20px;
+    padding: var(--v-table-pad);
     font-size: 12px;
     font-weight: 700;
     color: var(--sys-text-secondary);
@@ -467,7 +511,7 @@ body {
 }
 
 .sys-table td {
-    padding: 12px 18px;
+    padding: var(--v-table-pad);
     font-size: 13px;
     line-height: 1.5;
     color: var(--sys-text-primary);
@@ -488,7 +532,7 @@ body {
 .sys-dashboard-grid {
     display: grid;
     grid-template-columns: 1fr 340px;
-    gap: var(--sys-space-xl);
+    gap: var(--v-section-gap);
     align-items: start;
 }
 
@@ -508,7 +552,7 @@ body {
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: var(--sys-radius-lg);
-    padding: var(--sys-space-lg);
+    padding: var(--v-card-padding);
     box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 1);
     display: flex;
     flex-direction: column;
@@ -850,6 +894,7 @@ body {
     border-color: rgba(52, 211, 153, 0.5) !important;
     box-shadow: 0 0 15px rgba(52, 211, 153, 0.15);
 }
+
 /* --- MODALS & FORMS --- */
 .modal-overlay {
     position: fixed;
@@ -864,8 +909,13 @@ body {
 }
 
 @keyframes sysFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .step-modal {
@@ -882,8 +932,15 @@ body {
 }
 
 @keyframes sysSlideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .modal-header {
@@ -933,13 +990,15 @@ body {
     line-height: 1.3;
 }
 
-.type-grid, .bank-grid {
+.type-grid,
+.bank-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 12px;
 }
 
-.type-card, .bank-card {
+.type-card,
+.bank-card {
     display: flex;
     align-items: center;
     gap: 16px;
@@ -954,7 +1013,8 @@ body {
     color: inherit;
 }
 
-.type-card:hover, .bank-card:hover {
+.type-card:hover,
+.bank-card:hover {
     border-color: var(--sys-primary);
     background: var(--bg-primary);
     transform: translateY(-2px);
@@ -1188,7 +1248,11 @@ body {
     border-bottom: 1px solid #30363d;
 }
 
-.dark .type-card, .dark .bank-card, .dark .input-group input, .dark .toggle-group, .dark .preview-card {
+.dark .type-card,
+.dark .bank-card,
+.dark .input-group input,
+.dark .toggle-group,
+.dark .preview-card {
     background: #161b22;
     border-color: #30363d;
 }
@@ -1198,7 +1262,8 @@ body {
     border-color: #30363d;
 }
 
-.dark .type-desc, .dark .toggle-hint {
+.dark .type-desc,
+.dark .toggle-hint {
     color: #8b949e;
 }
 

@@ -22,7 +22,7 @@ import PageLayout from '@/components/PageLayout';
 import { supabase } from '@/services/supabase';
 
 const Settings: React.FC = () => {
-  const { settings, setCurrency, setTheme, hardReset, importVercelBackup, recalculateBalances, pushToCloud, pullFromCloud, user, signOut } = useFinanceStore();
+  const { settings, setCurrency, setTheme, setUiDensity, hardReset, importVercelBackup, recalculateBalances, pushToCloud, pullFromCloud, user, signOut } = useFinanceStore();
   const data = useCurrentData();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +76,12 @@ const Settings: React.FC = () => {
   const themes = [
     { id: 'light', name: 'Modo Claro', icon: Sun },
     { id: 'dark', name: 'Modo Escuro', icon: Moon },
+  ];
+
+  const densities = [
+    { id: 'compact', name: 'Compacto', icon: Zap },
+    { id: 'default', name: 'Padrão', icon: Monitor },
+    { id: 'comfortable', name: 'Confortável', icon: User },
   ];
 
   const summaryPanel = (
@@ -157,6 +163,34 @@ const Settings: React.FC = () => {
               </button>
             ))}
           </div>
+        </section>
+
+        <section style={{ marginBottom: '40px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Zap size={16} /> Densidade da Interface
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
+            {densities.map(d => (
+              <button
+                key={d.id}
+                onClick={() => setUiDensity(d.id as any)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', borderRadius: '12px', border: '2px solid', transition: 'all 0.2s', fontWeight: 700, fontSize: '14px', cursor: 'pointer',
+                  backgroundColor: settings.uiDensity === d.id ? 'var(--sys-bg-blue)' : 'transparent',
+                  borderColor: settings.uiDensity === d.id ? 'var(--sys-blue)' : 'var(--sys-border)',
+                  color: settings.uiDensity === d.id ? 'var(--sys-blue)' : 'var(--sys-text-secondary)',
+                  position: 'relative'
+                }}
+              >
+                <d.icon size={20} />
+                <span>{d.name}</span>
+                {settings.uiDensity === d.id && <Check size={14} style={{ position: 'absolute', top: 8, right: 8 }} />}
+              </button>
+            ))}
+          </div>
+          <p style={{ marginTop: '12px', fontSize: '11px', color: '#94a3b8' }}>
+            Escolha como a informação deve ser distribuída no ecrã. O modo compacto é ideal para gestão rápida no desktop.
+          </p>
         </section>
 
         <section>

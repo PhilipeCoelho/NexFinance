@@ -578,9 +578,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       <style>{`
-        .kpi-card { padding: 16px; min-height: 100px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+        .kpi-card { padding: var(--v-card-padding); min-height: 100px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
         .kpi-label { font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.05em; }
-        .kpi-value { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; margin: 4px 0; }
+        .kpi-value { font-size: var(--v-kpi-val-s); font-weight: 900; letter-spacing: -0.02em; margin: 4px 0; }
         .kpi-footer { font-size: 11px; color: #94a3b8; }
         .kpi-icon-container { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
         .kpi-icon-container.blue { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
@@ -588,7 +588,7 @@ const Dashboard: React.FC = () => {
         .kpi-icon-container.red { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; }
         .kpi-icon-container.warning { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
 
-        .sys-grid-4-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .sys-grid-4-cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--v-section-gap); }
         @media (max-width: 1200px) { .sys-grid-4-cols { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 600px) { .sys-grid-4-cols { grid-template-columns: 1fr; } }
 

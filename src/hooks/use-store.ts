@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ContextType, FinanceContextData, Transaction, Account, Category, Invoice, CreditCard, Budget, FinancialGoal } from '@/types/finance';
+import { ContextType, FinanceContextData, Transaction, Account, Category, Invoice, CreditCard, Budget, FinancialGoal, UIDensity } from '@/types/finance';
 import { FinancialEngine } from '@/lib/FinancialEngine';
 import { supabase } from '@/services/supabase';
 
@@ -15,6 +15,7 @@ interface Settings {
     language: string;
     theme: 'light' | 'dark';
     dashboardWidgets: DashboardWidget[];
+    uiDensity: UIDensity;
 }
 
 interface FinanceState {
@@ -38,6 +39,7 @@ interface FinanceState {
     setContext: (context: ContextType) => void;
     setCurrency: (currency: string) => void;
     setTheme: (theme: 'light' | 'dark') => void;
+    setUiDensity: (density: UIDensity) => void;
     toggleWidget: (id: string) => void;
     reorderWidgets: (startIndex: number, endIndex: number) => void;
     setReferenceMonth: (month: string) => void;
@@ -124,6 +126,7 @@ export const useFinanceStore = create<FinanceState>()(
                 language: 'pt-PT',
                 theme: 'light',
                 dashboardWidgets: DEFAULT_WIDGETS,
+                uiDensity: typeof window !== 'undefined' && window.innerWidth < 768 ? 'comfortable' : 'compact',
             },
             isLoading: false,
             referenceMonth: FinancialEngine.getLisbonDate('month'),
@@ -143,6 +146,10 @@ export const useFinanceStore = create<FinanceState>()(
                 set((state) => ({ settings: { ...state.settings, theme }, lastUpdatedAt: new Date().toISOString() }));
                 document.documentElement.classList.remove('light', 'dark');
                 document.documentElement.classList.add(theme);
+            },
+            setUiDensity: (density) => {
+                set((state) => ({ settings: { ...state.settings, uiDensity: density }, lastUpdatedAt: new Date().toISOString() }));
+                document.documentElement.setAttribute('data-ui-density', density);
             },
 
             toggleWidget: (id) => set((state) => {
@@ -192,6 +199,7 @@ export const useFinanceStore = create<FinanceState>()(
                     language: 'pt-PT',
                     theme: 'light',
                     dashboardWidgets: DEFAULT_WIDGETS,
+                    uiDensity: typeof window !== 'undefined' && window.innerWidth < 768 ? 'comfortable' : 'compact',
                 }
             }),
 
