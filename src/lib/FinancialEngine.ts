@@ -367,12 +367,14 @@ export class FinancialEngine {
         const todayMonth = this.getLisbonDate('month');
 
         // 1. Calcular o saldo no início do mês ATUAL
-        // Precisamos desfazer transações confirmadas deste mês para ter um ponto de partida estável
+        // Precisamos desfazer transações confirmadas deste mês para ter um ponto de partida estável.
+        // IMPORTANTE: usamos isTransactionInMonth (não startsWith) para capturar também
+        // transações fixas/recorrentes cujo t.date aponta para o mês de criação original.
         let balanceStartOfCurrentMonth = currentRealLiquidity;
         transactions.forEach(t => {
             if (t.isIgnored) return;
-            // Desfazemos apenas transações confirmadas que têm data no mês atual
-            if (t.status === 'confirmed' && (t.date || '').startsWith(todayMonth)) {
+            // Desfazemos apenas transações confirmadas que estão ATIVAS no mês atual
+            if (t.status === 'confirmed' && this.isTransactionInMonth(t, todayMonth)) {
                 const val = Number(t.value) || 0;
                 balanceStartOfCurrentMonth += (t.type === 'expense' ? val : (t.type === 'income' ? -val : 0));
             }
