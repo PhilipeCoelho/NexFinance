@@ -140,7 +140,7 @@ const Dashboard: React.FC = () => {
   const contextualLiquidity = useMemo(() => {
     const todayMonth = FinancialEngine.getLisbonDate('month');
     if (referenceMonth === todayMonth) {
-      return data.accounts?.reduce((sum, acc) => sum + (acc.currentBalance || 0), 0) || 0;
+      return FinancialEngine.calculateRealLiquidity(data.accounts || []);
     }
     return FinancialEngine.calculateProjectedInitialBalance(data?.transactions || [], data?.accounts || [], referenceMonth);
   }, [data?.transactions, data?.accounts, referenceMonth]);
