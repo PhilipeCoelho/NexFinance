@@ -245,7 +245,8 @@ const Dashboard: React.FC = () => {
           position: 'relative',
           opacity: isVisible ? 1 : 0.4,
           gridColumn: isFullWidth ? '1 / -1' : 'span 1',
-          filter: isVisible ? 'none' : 'grayscale(1)'
+          filter: isVisible ? 'none' : 'grayscale(1)',
+          transition: 'all 0.3s ease'
         }}
       >
         {isCustomizing && (
@@ -255,15 +256,19 @@ const Dashboard: React.FC = () => {
               position: 'absolute', top: -10, right: -10, zIndex: 10,
               width: 24, height: 24, borderRadius: '50%', backgroundColor: isVisible ? '#f85149' : '#3fb950',
               color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+              cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+              animation: 'popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
             }}
           >
             {isVisible ? <X size={14} /> : <Check size={14} />}
+            <span style={{ position: 'absolute', top: '100%', right: 0, fontSize: '8px', color: '#64748b', whiteSpace: 'nowrap', marginTop: '4px', visibility: isCustomizing ? 'visible' : 'hidden' }}>
+              {id}
+            </span>
           </button>
         )}
         {isVisible ? children : (
-          <div className="sys-card" style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', backgroundColor: 'var(--bg-tertiary)' }}>
-            <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600 }}>{label} Oculto</span>
+          <div className="sys-card" style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', backgroundColor: 'var(--bg-tertiary)', opacity: 0.6 }}>
+            <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.05em' }}>WIDGET "{label.toUpperCase()}" OCULTO</span>
           </div>
         )}
       </div>
@@ -290,7 +295,20 @@ const Dashboard: React.FC = () => {
   );
 
   const summaryPanel = (
-    <div className="sys-summary-widget">
+    <div className={`sys-summary-container ${!isSummaryVisible ? 'widget-hidden' : ''} ${isCustomizing ? 'wiggle' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+      {isCustomizing && (
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleWidget('summary_balance'); }}
+          style={{
+            position: 'absolute', top: -8, right: -8, zIndex: 10,
+            width: 24, height: 24, borderRadius: '50%', backgroundColor: isSummaryVisible ? '#f85149' : '#3fb950',
+            color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+          }}
+        >
+          {isSummaryVisible ? <X size={14} /> : <Check size={14} />}
+        </button>
+      )}
       <div className="sys-summary-widget-header">
         Balanço do Mês
       </div>
