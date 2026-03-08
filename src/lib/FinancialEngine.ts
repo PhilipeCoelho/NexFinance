@@ -318,6 +318,10 @@ export class FinancialEngine {
 
             if (diffMonths <= 0) return t.date.startsWith(monthStr);
             if (t.recurrence?.excludedDates?.includes(monthStr)) return false;
+
+            // Respect End Date if defined
+            if (t.recurrence?.endDate && monthStr > t.recurrence.endDate) return false;
+
             if (t.isFixed) return true;
             if (!t.isRecurring) return t.date.startsWith(monthStr);
 

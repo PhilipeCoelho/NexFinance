@@ -183,7 +183,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
     setValue('value', numericValue);
   };
 
-  const finalizeSubmit = async (payload: any, stayOpen: boolean, forcedScope?: 'all' | 'single') => {
+  const finalizeSubmit = async (payload: any, stayOpen: boolean, forcedScope?: 'all' | 'single' | 'future') => {
     try {
       const numericValue = Number(payload.value) || 0;
 
@@ -276,10 +276,19 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
                 <button
                   type="button"
                   className="prompt-opt-btn primary"
+                  onClick={() => finalizeSubmit(pendingSubmitData?.payload, pendingSubmitData?.stayOpen || false, 'future')}
+                >
+                  <div className="opt-title">Todas as pendentes</div>
+                  <div className="opt-desc">Altera deste mês em diante (O que passou, passou)</div>
+                </button>
+
+                <button
+                  type="button"
+                  className="prompt-opt-btn"
                   onClick={() => finalizeSubmit(pendingSubmitData?.payload, pendingSubmitData?.stayOpen || false, 'all')}
                 >
-                  <div className="opt-title">Todos os meses</div>
-                  <div className="opt-desc">Altera o valor/dados para todas as parcelas/fixas</div>
+                  <div className="opt-title">Toda a série (Pendente + Passado)</div>
+                  <div className="opt-desc">Altera todos os registros, incluindo os meses anteriores</div>
                 </button>
               </div>
 

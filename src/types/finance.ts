@@ -95,6 +95,7 @@ export interface Transaction {
         installmentsCount?: number;
         frequency: 'weekly' | 'monthly' | 'yearly';
         excludedDates?: string[]; // Format YYYY-MM
+        endDate?: string; // Format YYYY-MM (Inclusive)
     };
     parentTransactionId?: string;
     occurrenceDate?: string; // New: Specific occurrence indicator
