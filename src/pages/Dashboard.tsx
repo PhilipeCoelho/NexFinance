@@ -85,9 +85,13 @@ const Dashboard: React.FC = () => {
     }).format(value || 0);
   };
 
-  const currentLiquidity = useMemo(() => {
-    return data.accounts?.reduce((sum, acc) => sum + (acc.currentBalance || 0), 0) || 0;
-  }, [data.accounts]);
+  const contextualLiquidity = useMemo(() => {
+    const todayMonth = FinancialEngine.getLisbonDate('month');
+    if (referenceMonth === todayMonth) {
+      return data.accounts?.reduce((sum, acc) => sum + (acc.currentBalance || 0), 0) || 0;
+    }
+    return FinancialEngine.calculateProjectedInitialBalance(data?.transactions || [], data?.accounts || [], referenceMonth);
+  }, [data?.transactions, data?.accounts, referenceMonth]);
 
   const monthlyTransactions = useMemo(() => {
     if (!data?.transactions) return [];
@@ -344,13 +348,17 @@ const Dashboard: React.FC = () => {
           <div className="sys-grid">
             <div className="sys-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>Liquidez Atual</span>
+                <span className="sys-subtitle" style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--sys-text-secondary)' }}>
+                  {referenceMonth === FinancialEngine.getLisbonDate('month') ? 'Liquidez Atual' : 'Liquidez Projetada'}
+                </span>
                 <div className="sys-summary-icon-box bg-blue" style={{ width: '32px', height: '32px', borderRadius: '8px' }}>
                   <Wallet size={16} />
                 </div>
               </div>
-              <div className="sys-financial-value">{formatCurrency(currentLiquidity)}</div>
-              <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>Saldo total em contas</div>
+              <div className="sys-financial-value">{formatCurrency(contextualLiquidity)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--sys-text-secondary)', fontWeight: 500 }}>
+                {referenceMonth === FinancialEngine.getLisbonDate('month') ? 'Saldo total em contas' : 'Saldo inicial do mês'}
+              </div>
             </div>
             <div className="sys-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
