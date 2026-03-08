@@ -53,46 +53,46 @@
     --sys-bg-red: #fef2f2;
     --sys-bg-gray: #f8fafc;
 
-    /* Density Default Tokens (Padrão) */
-    --v-nav-item-h: 44px;
-    --v-nav-icon-s: 20px;
-    --v-nav-font-s: 14px;
-    --v-card-padding: 24px;
-    --v-table-row-h: 52px;
-    --v-btn-h: 40px;
-    --v-btn-pad: 0 20px;
-    --v-section-gap: 24px;
-    --v-kpi-val-s: 22px;
-    --v-header-h: 56px;
-    --v-table-pad: 14px 20px;
+    /* Density Default Tokens (Padrão) - Reduced 30% */
+    --v-nav-item-h: 31px;
+    --v-nav-icon-s: 14px;
+    --v-nav-font-s: 11px;
+    --v-card-padding: 17px;
+    --v-table-row-h: 36px;
+    --v-btn-h: 28px;
+    --v-btn-pad: 0 14px;
+    --v-section-gap: 17px;
+    --v-kpi-val-s: 15px;
+    --v-header-h: 39px;
+    --v-table-pad: 10px 14px;
 }
 
 [data-ui-density="compact"] {
-    --v-nav-item-h: 36px;
-    --v-nav-icon-s: 16px;
-    --v-nav-font-s: 13px;
-    --v-card-padding: 16px;
-    --v-table-row-h: 40px;
-    --v-btn-h: 32px;
-    --v-btn-pad: 0 14px;
-    --v-section-gap: 16px;
-    --v-kpi-val-s: 18px;
-    --v-header-h: 48px;
-    --v-table-pad: 8px 16px;
+    --v-nav-item-h: 25px;
+    --v-nav-icon-s: 11px;
+    --v-nav-font-s: 10px;
+    --v-card-padding: 11px;
+    --v-table-row-h: 28px;
+    --v-btn-h: 22px;
+    --v-btn-pad: 0 10px;
+    --v-section-gap: 11px;
+    --v-kpi-val-s: 13px;
+    --v-header-h: 34px;
+    --v-table-pad: 6px 11px;
 }
 
 [data-ui-density="comfortable"] {
-    --v-nav-item-h: 52px;
-    --v-nav-icon-s: 22px;
-    --v-nav-font-s: 15px;
-    --v-card-padding: 32px;
-    --v-table-row-h: 60px;
-    --v-btn-h: 48px;
-    --v-btn-pad: 0 24px;
-    --v-section-gap: 32px;
-    --v-kpi-val-s: 26px;
-    --v-header-h: 64px;
-    --v-table-pad: 18px 24px;
+    --v-nav-item-h: 36px;
+    --v-nav-icon-s: 15px;
+    --v-nav-font-s: 12px;
+    --v-card-padding: 22px;
+    --v-table-row-h: 42px;
+    --v-btn-h: 34px;
+    --v-btn-pad: 0 17px;
+    --v-section-gap: 22px;
+    --v-kpi-val-s: 18px;
+    --v-header-h: 45px;
+    --v-table-pad: 13px 17px;
 }
 
 .dark {
