@@ -67,8 +67,9 @@ interface FinanceState {
     updateBudget: (id: string, budget: any) => void;
     deleteBudget: (id: string) => void;
     addGoal: (goal: any) => void;
-    updateGoal: (id: string, goal: any) => void;
+    updateGoal: (id: string, goal: Partial<FinancialGoal>) => void;
     deleteGoal: (id: string) => void;
+    importVercelBackup: (data: any) => void;
 }
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
@@ -335,6 +336,16 @@ export const useFinanceStore = create<FinanceState>()(
                 const goals = state[key].goals.filter(g => g.id !== id);
                 return { [key]: { ...state[key], goals } };
             }),
+
+            importVercelBackup: (data) => {
+                if (!data) return;
+                set((state) => ({
+                    ...state,
+                    personalData: data.personalData || state.personalData,
+                    businessData: data.businessData || state.businessData,
+                    settings: { ...state.settings, ...data.settings }
+                }));
+            },
         }),
         {
             name: 'nexfinance-storage',
@@ -354,6 +365,32 @@ export const useFinanceStore = create<FinanceState>()(
 export const useCurrentData = () => {
     const { currentContext, personalData, businessData } = useFinanceStore();
     return currentContext === 'personal' ? personalData : businessData;
+};
+
+export const getVisibleTransactions = (transactions: Transaction[], filters: {
+    viewMonth: string;
+    searchTerm: string;
+    type: 'income' | 'expense' | 'all';
+    showIgnored: boolean;
+}) => {
+    const { viewMonth, searchTerm, type, showIgnored } = filters;
+    const filtered = transactions.filter(t => {
+        if (!FinancialEngine.isTransactionInMonth(t, viewMonth)) return false;
+        if (type !== 'all' && t.type !== type) return false;
+        if (!showIgnored && t.isIgnored) return false;
+        if (searchTerm && !t.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+        return true;
+    });
+
+    const contextTransactions = transactions.filter(t =>
+        FinancialEngine.isTransactionInMonth(t, viewMonth) &&
+        (type === 'all' || t.type === type)
+    );
+
+    const hiddenCount = contextTransactions.filter(t => t.isIgnored && !showIgnored).length;
+    const hiddenValue = contextTransactions.filter(t => t.isIgnored && !showIgnored).reduce((sum, t) => sum + t.value, 0);
+
+    return { transactions: filtered, hiddenCount, hiddenValue };
 };
 
 // Cloud & Realtime Logic

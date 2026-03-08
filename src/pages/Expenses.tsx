@@ -17,6 +17,7 @@ import {
     TrendingDown
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData, getVisibleTransactions } from '@/hooks/use-store';
+import { Transaction } from '@/types/finance';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
@@ -116,9 +117,9 @@ const Expenses: React.FC = () => {
     }, [visibleExpenses, sortConfig, data]);
 
     const stats = useMemo(() => {
-        const activeExpenses = visibleExpenses.filter(t => !t.isIgnored);
-        const pending = activeExpenses.filter(t => FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) !== 'confirmed').reduce((acc, t) => acc + t.value, 0);
-        const paid = activeExpenses.filter(t => FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
+        const activeExpenses = visibleExpenses.filter((t: Transaction) => !t.isIgnored);
+        const pending = activeExpenses.filter((t: Transaction) => FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) !== 'confirmed').reduce((acc: number, t: Transaction) => acc + t.value, 0);
+        const paid = activeExpenses.filter((t: Transaction) => FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc: number, t: Transaction) => acc + t.value, 0);
         return { pending, paid, total: pending + paid };
     }, [visibleExpenses, referenceMonth]);
 

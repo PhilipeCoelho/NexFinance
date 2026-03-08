@@ -22,6 +22,7 @@ import {
   ArrowRightLeft
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData, getVisibleTransactions } from '@/hooks/use-store';
+import { Transaction } from '@/types/finance';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
@@ -125,9 +126,9 @@ const Transactions: React.FC = () => {
   }, [visibleTransactions, sortConfig, data]);
 
   const stats = useMemo(() => {
-    const activeTransactions = visibleTransactions.filter(t => !t.isIgnored);
-    const income = activeTransactions.filter(t => t.type === 'income' && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
-    const expenses = activeTransactions.filter(t => t.type === 'expense' && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc, t) => acc + t.value, 0);
+    const activeTransactions = visibleTransactions.filter((t: Transaction) => !t.isIgnored);
+    const income = activeTransactions.filter((t: Transaction) => t.type === 'income' && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc: number, t: Transaction) => acc + t.value, 0);
+    const expenses = activeTransactions.filter((t: Transaction) => t.type === 'expense' && FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth) === 'confirmed').reduce((acc: number, t: Transaction) => acc + t.value, 0);
     const balance = income - expenses;
 
     return { income, expenses, balance };
