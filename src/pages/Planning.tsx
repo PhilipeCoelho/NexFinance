@@ -24,6 +24,7 @@ import PageLayout from '@/components/PageLayout';
 import { FinancialEngine } from '@/lib/FinancialEngine';
 import BudgetModal from '@/components/BudgetModal';
 import GoalModal from '@/components/GoalModal';
+import FinancialIntelligence from '@/components/FinancialIntelligence';
 
 const Planning: React.FC = () => {
     const data = useCurrentData();
@@ -96,6 +97,11 @@ const Planning: React.FC = () => {
 
     return (
         <PageLayout title="Inteligência de Planejamento" actions={headerActions} summaryPanel={summaryPanel}>
+
+            {/* Inteligência Financeira Automática */}
+            <div style={{ marginBottom: '40px' }}>
+                <FinancialIntelligence />
+            </div>
 
             {/* Saúde Financeira - Micro Cards */}
             <div className="sys-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', marginBottom: '32px' }}>

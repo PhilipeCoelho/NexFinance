@@ -415,4 +415,123 @@ export class FinancialEngine {
             status: savingRate > 20 ? 'excellent' : savingRate > 10 ? 'good' : savingRate > 0 ? 'warning' : 'critical'
         };
     }
+
+    /**
+     * Ajusta a data de uma transação para o dia correspondente em um mês de referência.
+     */
+    static getAdjustedDate(date: string, referenceMonth: string): string {
+        const day = date.split('-')[2] || '01';
+        return `${referenceMonth}-${day.padStart(2, '0')}`;
+    }
+
+    /**
+     * Detecta o primeiro momento em que o saldo projetado ficará negativo.
+     */
+    static getNegativeBalanceAlert(transactions: Transaction[], accounts: Account[], horizonMonths: number = 3) {
+        const flow = this.generateFinancialFlow(transactions, accounts, horizonMonths);
+        const riskEvent = flow.events.find(e => e.resultingBalance < 0);
+
+        if (riskEvent) {
+            return {
+                hasRisk: true,
+                date: riskEvent.date,
+                value: riskEvent.resultingBalance,
+                description: riskEvent.description
+            };
+        }
+
+        return { hasRisk: false };
+    }
+
+    /**
+     * Identifica despesas recorrentes relevantes baseado em padrões.
+     */
+    static identifyRecurringExpenses(transactions: Transaction[]) {
+        const expenses = transactions.filter(t => t.type === 'expense' && !t.isIgnored);
+        const recurringMap: Record<string, Transaction[]> = {};
+
+        expenses.forEach(t => {
+            const key = `${t.description.toLowerCase()}-${Math.round(Number(t.value))}`;
+            if (!recurringMap[key]) recurringMap[key] = [];
+            recurringMap[key].push(t);
+        });
+
+        return Object.values(recurringMap)
+            .filter(group => group.length >= 2 || group[0].isFixed || group[0].isRecurring)
+            .map(group => ({
+                description: group[0].description,
+                value: Number(group[0].value),
+                frequency: group.length,
+                categoryId: group[0].categoryId,
+                isFixed: group[0].isFixed,
+                lastDate: group.sort((a, b) => b.date.localeCompare(a.date))[0].date
+            }))
+            .sort((a, b) => b.value - a.value);
+    }
+
+    /**
+     * Gera insights automáticos baseados na saúde financeira e comportamento de gastos.
+     */
+    static generateInsights(transactions: Transaction[], accounts: Account[], referenceMonth: string) {
+        const insights: any[] = [];
+        const health = this.getFinancialHealth(transactions, referenceMonth);
+
+        // 1. Alerta de Saldo Negativo
+        const negAlert = this.getNegativeBalanceAlert(transactions, accounts);
+        if (negAlert.hasRisk) {
+            insights.push({
+                type: 'critical',
+                title: 'Risco de Saldo Negativo',
+                message: `Atenção: Seu saldo projetado pode ficar negativo em ${negAlert.date} devido à despesa "${negAlert.description}".`,
+                icon: 'AlertCircle'
+            });
+        }
+
+        // 2. Análise de Variação de Gastos (vs Mês Anterior)
+        const [yr, mo] = referenceMonth.split('-').map(Number);
+        const prevMonthDate = new Date(yr, mo - 2, 1);
+        const prevMonthStr = `${prevMonthDate.getFullYear()}-${String(prevMonthDate.getMonth() + 1).padStart(2, '0')}`;
+        const prevHealth = this.getFinancialHealth(transactions, prevMonthStr);
+
+        if (health.expenses > prevHealth.expenses * 1.15 && prevHealth.expenses > 0) {
+            const variation = ((health.expenses - prevHealth.expenses) / prevHealth.expenses) * 100;
+            insights.push({
+                type: 'warning',
+                title: 'Aumento de Gastos',
+                message: `Seus gastos este mês estão ${variation.toFixed(0)}% acima da média do mês passado. Recomendamos revisar suas categorias de maior consumo.`,
+                icon: 'TrendingUp'
+            });
+        }
+
+        // 3. Taxa de Poupança
+        if (health.savingRate > 20) {
+            insights.push({
+                type: 'success',
+                title: 'Excelente Taxa de Poupança',
+                message: `Parabéns! Você está economizando ${health.savingRate.toFixed(0)}% da sua receita. Considere investir parte desse valor.`,
+                icon: 'Star'
+            });
+        } else if (health.savingRate < 5 && health.income > 0) {
+            insights.push({
+                type: 'info',
+                title: 'Oportunidade de Economia',
+                message: 'Sua margem de sobra está baixa este mês. Tente reduzir gastos não essenciais para fortalecer sua reserva.',
+                icon: 'Target'
+            });
+        }
+
+        // 4. Despesas Recorrentes Impactantes
+        const recurring = this.identifyRecurringExpenses(transactions);
+        const bigRecurring = recurring.find(r => r.value > health.income * 0.1);
+        if (bigRecurring) {
+            insights.push({
+                type: 'info',
+                title: 'Compromisso Recorrente Relevante',
+                message: `A despesa "${bigRecurring.description}" representa mais de 10% da sua receita mensal. Certifique-se de que este valor está otimizado.`,
+                icon: 'Clock'
+            });
+        }
+
+        return insights;
+    }
 }

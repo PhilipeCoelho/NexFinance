@@ -28,6 +28,7 @@ import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
 import { FinancialEngine } from '@/lib/FinancialEngine';
 import PageLayout from '@/components/PageLayout';
+import FinancialIntelligence from '@/components/FinancialIntelligence';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -434,60 +435,9 @@ const Dashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* 3. INSIGHTS FINANCEIROS E ALERTAS */}
+        {/* 3. INTELIGÊNCIA FINANCEIRA AUTOMÁTICA */}
         <section>
-          <h2 className="sys-subtitle" style={{ margin: '0 0 16px 0' }}>Insights e Alertas Inteligentes</h2>
-          <div className="sys-grid">
-            {/* Insight 1: Variação de Gastos */}
-            <div className="sys-card" style={{ borderLeft: `4px solid ${expenseVariation > 0 ? 'var(--sys-red)' : 'var(--sys-green)'}` }}>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: expenseVariation > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: expenseVariation > 0 ? 'var(--sys-red)' : 'var(--sys-green)' }}>
-                  <Activity size={20} />
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Variação de Gastos</h4>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 800, color: expenseVariation > 0 ? 'var(--sys-red)' : 'var(--sys-green)' }}>
-                      {expenseVariation > 0 ? '+' : ''}{expenseVariation.toFixed(1)}%
-                    </span>
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>em relação ao mês anterior</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Insight 2: Alerta de Risco de Saldo */}
-            <div className="sys-card" style={{ borderLeft: `4px solid ${hasNegativeProjection ? 'var(--sys-red)' : 'var(--sys-blue)'}` }}>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: hasNegativeProjection ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 130, 246, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: hasNegativeProjection ? 'var(--sys-red)' : 'var(--sys-blue)' }}>
-                  <AlertCircle size={20} />
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Projeção de Saldo</h4>
-                  <p style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: '#1e293b' }}>
-                    {hasNegativeProjection ? "Atenção: Risco de saldo negativo" : "Fluxo de caixa saudável"}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Insight 3: Próximo Vencimento Crítico */}
-            {displayUpcoming.length > 0 && (
-              <div className="sys-card" style={{ borderLeft: '4px solid var(--sys-warning)' }}>
-                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', backgroundColor: 'rgba(245, 158, 11, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sys-warning)' }}>
-                    <Clock size={20} />
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>Vencimento Próximo</h4>
-                    <p style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: '#1e293b' }}>
-                      {displayUpcoming[0].description} ({formatCurrency(displayUpcoming[0].value)})
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <FinancialIntelligence />
         </section>
 
         {/* 4. MÓDULOS CONFIGURÁVEIS */}
