@@ -137,13 +137,12 @@ const Dashboard: React.FC = () => {
     }).format(value || 0);
   };
 
-  const contextualLiquidity = useMemo(() => {
-    const todayMonth = FinancialEngine.getLisbonDate('month');
-    if (referenceMonth === todayMonth) {
-      return FinancialEngine.calculateRealLiquidity(data.accounts || []);
-    }
-    return FinancialEngine.calculateProjectedInitialBalance(data?.transactions || [], data?.accounts || [], referenceMonth);
-  }, [data?.transactions, data?.accounts, referenceMonth]);
+  // Saldo real atual (apenas contas com includeInTotal=true)
+  const currentRealLiquidity = useMemo(() => FinancialEngine.calculateRealLiquidity(data.accounts || []), [data?.accounts]);
+
+  // Saldo inicial do mês de referência (base para calcular projeção de fim de mês)
+  const contextualLiquidity = useMemo(() => FinancialEngine.calculateProjectedInitialBalance(data?.transactions || [], data?.accounts || [], referenceMonth),
+    [data?.transactions, data?.accounts, referenceMonth]);
 
   const monthlyTransactions = useMemo(() => {
     if (!data?.transactions) return [];
@@ -159,6 +158,7 @@ const Dashboard: React.FC = () => {
   }, [monthlyTransactions]);
 
   const netBalance = useMemo(() => monthlyIncomeTotal - expenseTotal, [monthlyIncomeTotal, expenseTotal]);
+  // projectedEndBalance = início do mês + todas as trans do mês = expectativa de fim de mês (igual ao FinancialFlow)
   const projectedEndBalance = useMemo(() => contextualLiquidity + netBalance, [contextualLiquidity, netBalance]);
 
   const displayUpcoming = useMemo(() => {
@@ -367,8 +367,8 @@ const Dashboard: React.FC = () => {
               <div className="kpi-label">LIQUIDEZ ATUAL</div>
               <div className="kpi-icon-container blue"><Wallet size={16} /></div>
             </div>
-            <div className="kpi-value">{formatCurrency(contextualLiquidity)}</div>
-            <div className="kpi-footer">Saldo total em contas</div>
+            <div className="kpi-value">{formatCurrency(currentRealLiquidity)}</div>
+            <div className="kpi-footer">Saldo real em contas hoje</div>
           </div>
           <div className="sys-card kpi-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
