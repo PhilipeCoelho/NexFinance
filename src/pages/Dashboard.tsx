@@ -486,7 +486,7 @@ const Dashboard: React.FC = () => {
                           return (
                             <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', alignItems: 'center' }}>
                               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontWeight: 600, color: '#475569' }}>{item.description}</span>
+                                <span style={{ fontWeight: 500, color: '#475569' }}>{item.description}</span>
                                 {installmentText && (
                                   <span style={{ fontSize: '9px', color: 'var(--sys-blue)', fontWeight: 700 }}>Parcela {installmentText}</span>
                                 )}
