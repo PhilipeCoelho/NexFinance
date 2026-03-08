@@ -332,7 +332,7 @@ body {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border-radius: var(--sys-radius-lg);
-    padding: var(--v-card-padding);
+    padding: var(--v-card-padding) !important;
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 1);
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1285,8 +1285,15 @@ body {
     font-size: calc(var(--v-kpi-val-s) + 4px) !important;
 }
 
-.sys-subtitle {
-    font-size: calc(var(--v-kpi-val-s) - 2px) !important;
+/* Summary widget header label */
+.sys-summary-widget-header {
+    font-size: var(--v-nav-font-s) !important;
+    padding: calc(var(--v-section-gap) * 0.5) 0 !important;
+}
+
+/* Summary widget block title */
+.sys-summary-block-title {
+    font-size: var(--v-nav-font-s) !important;
 }
 
 /* Summary widget values */
@@ -1313,3 +1320,13 @@ body {
 .sys-financial-val-sm {
     font-size: calc(var(--v-nav-font-s) + 1px) !important;
 }
+/* --- Extended Density Overrides --- */
+.sys-action-btn { padding: 4px !important; font-size: var(--v-nav-font-s) !important; }
+.sys-filter-btn { font-size: var(--v-nav-font-s) !important; padding: 4px 10px !important; }
+.sys-summary-widget { padding: var(--v-card-padding) !important; gap: calc(var(--v-section-gap) * 0.5) !important; }
+.sys-summary-block { padding-bottom: calc(var(--v-section-gap) * 0.4) !important; gap: 2px !important; }
+.sys-btn-primary, .sys-btn-secondary, .sys-btn-destructive, .sys-btn-minimal { font-size: var(--v-nav-font-s) !important; gap: 5px !important; }
+.sys-card h3, .sys-summary-widget h3, .sys-widget-container h3 { font-size: calc(var(--v-nav-font-s) + 2px) !important; }
+.sys-search-input { font-size: var(--v-nav-font-s) !important; height: var(--v-btn-h) !important; }
+.sys-content-layout { padding: var(--v-card-padding) !important; gap: var(--v-section-gap) !important; }
+.sys-main-area { gap: var(--v-section-gap) !important; }
