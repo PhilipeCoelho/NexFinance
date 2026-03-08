@@ -70,6 +70,7 @@ interface FinanceState {
     updateGoal: (id: string, goal: Partial<FinancialGoal>) => void;
     deleteGoal: (id: string) => void;
     importVercelBackup: (data: any) => void;
+    experimental_recoverData: () => Promise<boolean>;
 }
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
@@ -346,6 +347,33 @@ export const useFinanceStore = create<FinanceState>()(
                     settings: { ...state.settings, ...data.settings }
                 }));
             },
+
+            experimental_recoverData: async () => {
+                const oldKeys = ['finance-storage', 'nexfinance-data', 'zustand-finance', 'nexfinance-v1'];
+                let recovered = false;
+
+                oldKeys.forEach(key => {
+                    const oldData = localStorage.getItem(key);
+                    if (oldData) {
+                        try {
+                            const parsed = JSON.parse(oldData);
+                            const state = parsed.state || parsed;
+                            if (state.personalData?.transactions?.length > 0) {
+                                set({
+                                    personalData: state.personalData,
+                                    businessData: state.businessData || state.businessData,
+                                    settings: { ...get().settings, ...state.settings }
+                                });
+                                recovered = true;
+                                console.log(`RECOVERY: Found and restored data from ${key}`);
+                            }
+                        } catch (e) {
+                            console.error(`RECOVERY: Failed to parse ${key}`);
+                        }
+                    }
+                });
+                return recovered;
+            },
         }),
         {
             name: 'nexfinance-storage',
@@ -418,10 +446,14 @@ if (typeof window !== 'undefined') {
         }
     });
 
+    let isInitialLoad = true;
+
     useFinanceStore.subscribe((state) => {
-        // Only push to cloud if there's actual data to avoid wiping cloud with empty local
-        const hasData = state.personalData.transactions.length > 0 || state.businessData.transactions.length > 0;
-        if (state.session?.user && hasData) {
+        // SAFETY: NEVER push to cloud if transactions are 0, unless it's explicitly cleared
+        // This prevents overwriting a full cloud DB with an empty local state during boot
+        const hasData = (state.personalData?.transactions?.length || 0) > 0 || (state.businessData?.transactions?.length || 0) > 0;
+
+        if (state.session?.user && hasData && !isInitialLoad) {
             const statePayload = {
                 currentContext: state.currentContext,
                 personalData: state.personalData,
@@ -437,6 +469,11 @@ if (typeof window !== 'undefined') {
             }).then(({ error }) => {
                 if (!error) console.log("CLOUD: Sync complete");
             });
+        }
+
+        // After the first few seconds or first subscription trigger, we assume the app is hydrated
+        if (isInitialLoad) {
+            setTimeout(() => { isInitialLoad = false; }, 5000);
         }
     });
 }

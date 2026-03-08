@@ -13,7 +13,9 @@ import {
   Shield,
   User,
   Zap,
-  UploadCloud
+  UploadCloud,
+  Activity,
+  Trash2
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
 import PageLayout from '@/components/PageLayout';
@@ -207,12 +209,34 @@ const Settings: React.FC = () => {
             </button>
 
             <button
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-red)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
-              onClick={() => hardReset()}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderRadius: '12px', border: '1px solid var(--sys-red)', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
+              onClick={async () => {
+                const recovered = await useFinanceStore.getState().experimental_recoverData();
+                if (recovered) {
+                  alert("Sucesso! Dados antigos foram encontrados e restaurados localmente.");
+                } else {
+                  alert("Infelizmente não encontramos rastros de dados em outros nomes de armazenamento no seu navegador atual.");
+                }
+              }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Database size={18} color="var(--sys-red)" />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-red)' }}>Sincronizar/Limpar Dados (Baseado na Produção)</span>
+                <Activity size={18} color="var(--sys-red)" />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-red)' }}>Tentar Recuperação de Emergência (Busca Local)</span>
+              </div>
+              <ChevronRight size={16} color="var(--sys-red)" opacity={0.5} />
+            </button>
+
+            <button
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-red)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
+              onClick={() => {
+                if (confirm("ATENÇÃO: Isso apagará TODOS os dados locais. Use apenas se os dados já estiverem seguros na nuvem. Continuar?")) {
+                  hardReset();
+                }
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Trash2 size={18} color="var(--sys-red)" />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-red)' }}>Limpar Tudo (Purge Local Data)</span>
               </div>
               <ChevronRight size={16} color="var(--sys-red)" opacity={0.5} />
             </button>
