@@ -10,10 +10,35 @@ import {
     TrendingUp,
     TrendingDown,
     Calendar,
-    Wallet
+    Wallet,
+    Info,
+    Check
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    Title,
+    Tooltip,
+    Legend,
+    Filler
+);
 
 const FinancialFlow: React.FC = () => {
     const data = useCurrentData();
@@ -127,297 +152,352 @@ const FinancialFlow: React.FC = () => {
                     )}
                 </div>
 
-                {/* Timeline */}
-                <div className="timeline-wrapper">
-                    <div className="timeline-line"></div>
-
-                    {flowData.events.length === 0 ? (
-                        <div className="empty-flow">
-                            <Activity size={48} opacity={0.2} />
-                            <p>Nenhuma transação prevista para o período selecionado.</p>
+                {/* New Analysis Section: Chart and Map */}
+                <div className="flow-grid-analysis">
+                    {/* Evolution Chart */}
+                    <div className="sys-card chart-card">
+                        <div className="chart-header">
+                            <TrendingUp size={20} color="var(--sys-blue)" />
+                            <h3 className="chart-title">Evolução do Saldo Projetado</h3>
                         </div>
-                    ) : (
-                        flowData.events.map((event: any, index: number) => {
-                            const isNegative = event.resultingBalance < 0;
-                            const isIncome = event.type === 'income';
-                            const isPast = event.status === 'confirmed';
+                        <div className="chart-body">
+                            <Line
+                                data={{
+                                    labels: flowData.events.map(e => {
+                                        const d = safeParse(e.date);
+                                        return viewMode === 'full' ? format(d, 'MMM/yy', { locale: ptBR }) : format(d, 'dd/MM');
+                                    }),
+                                    datasets: [{
+                                        label: 'Saldo',
+                                        data: flowData.events.map(e => e.resultingBalance),
+                                        borderColor: '#3b82f6',
+                                        backgroundColor: (context: any) => {
+                                            const chart = context.chart;
+                                            const { ctx, chartArea } = chart;
+                                            if (!chartArea) return undefined;
+                                            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+                                            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+                                            gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                                            return gradient;
+                                        },
+                                        fill: true,
+                                        tension: 0.4,
+                                        pointRadius: viewMode === 'full' ? 0 : 2,
+                                        pointHoverRadius: 6,
+                                        borderWidth: 3
+                                    }]
+                                }}
+                                options={{
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: {
+                                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                            padding: 12,
+                                            titleFont: { size: 14, weight: 'bold' },
+                                            bodyFont: { size: 13 },
+                                            callbacks: {
+                                                label: (context: any) => `Saldo: ${formatCurrency(context.parsed.y)}`
+                                            }
+                                        }
+                                    },
+                                    interaction: {
+                                        intersect: false,
+                                        mode: 'index',
+                                    },
+                                    scales: {
+                                        y: {
+                                            grid: { color: 'rgba(255,255,255,0.05)', drawTicks: false },
+                                            border: { display: false },
+                                            ticks: {
+                                                font: { size: 11 },
+                                                callback: (value: any) => formatCurrency(value)
+                                            }
+                                        },
+                                        x: {
+                                            grid: { display: false },
+                                            border: { display: false },
+                                            ticks: {
+                                                font: { size: 10 },
+                                                maxRotation: 0,
+                                                autoSkip: true,
+                                                maxTicksLimit: viewMode === 'full' ? 12 : 10
+                                            }
+                                        }
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
 
-                            return (
-                                <div key={event.id} className={`timeline-item ${isNegative ? 'is-risk' : ''} ${isPast ? 'is-past' : ''} fade-in`} style={{ animationDelay: `${index * 0.05}s` }}>
-                                    <div className="timeline-date">
-                                        <span className="date-day">{(event.date || '').split('-')[2] || '01'}</span>
-                                        <span className="date-month">{format(safeParse(event.date), 'MMM', { locale: ptBR }).toUpperCase()}</span>
-                                    </div>
+                    {/* Finance Map Summary (Always Month-Focused) */}
+                    <div className="sys-card map-card">
+                        <div className="chart-header">
+                            <Calendar size={20} color="var(--sys-blue)" />
+                            <h3 className="chart-title">Mapa Financeiro do Mês</h3>
+                        </div>
+                        <div className="map-body">
+                            {(() => {
+                                const currentMonthEvents = data.transactions.filter(t => FinancialEngine.isTransactionInMonth(t, referenceMonth));
+                                const inTotal = currentMonthEvents.filter(t => t.type === 'income' && !t.isIgnored).reduce((s, t) => s + Number(t.value), 0);
+                                const exTotal = currentMonthEvents.filter(t => t.type === 'expense' && !t.isIgnored).reduce((s, t) => s + Number(t.value), 0);
+                                const initial = FinancialEngine.calculateProjectedInitialBalance(data.transactions, data.accounts, referenceMonth);
+                                const finalResult = initial + inTotal - exTotal;
 
-                                    <div className="timeline-marker">
-                                        {isIncome ? <ArrowUpCircle size={20} className="color-green" /> : <ArrowDownCircle size={20} className="color-red" />}
-                                    </div>
-
-                                    <div className="timeline-content sys-card">
-                                        <div className="timeline-main">
-                                            <div className="timeline-info">
-                                                <div className="flex items-center gap-2">
-                                                    <h4 className="timeline-title">{event.description}</h4>
-                                                    {isPast && <span className="status-badge-mini">OK</span>}
-                                                </div>
-                                                <span className="timeline-category">
-                                                    {(data?.categories || []).find(c => c.id === event.category)?.name || 'Outros'}
-                                                </span>
-                                            </div>
-                                            <div className="timeline-values">
-                                                <span className={`timeline-amount ${isIncome ? 'color-green' : 'color-red'}`}>
-                                                    {isIncome ? '+' : '-'}{formatCurrency(event.value)}
-                                                </span>
-                                                <div className={`timeline-balance ${isNegative ? 'bg-red-soft color-red' : ''}`}>
-                                                    <span className="balance-label">Saldo projetado:</span>
-                                                    <span className="balance-value">{formatCurrency(event.resultingBalance)}</span>
-                                                </div>
-                                            </div>
+                                return (
+                                    <>
+                                        <div className="map-item">
+                                            <span className="map-label">Liquidez Inicial</span>
+                                            <span className="map-value">{formatCurrency(initial)}</span>
                                         </div>
-                                        {isNegative && (
-                                            <div className="timeline-alert">
-                                                <AlertTriangle size={14} />
-                                                <span>Atenção: Seu saldo ficará negativo nesta data.</span>
+                                        <div className="map-item">
+                                            <span className="map-label">Entradas Previstas</span>
+                                            <span className="map-value color-green">+{formatCurrency(inTotal)}</span>
+                                        </div>
+                                        <div className="map-item">
+                                            <span className="map-label">Saídas Previstas</span>
+                                            <span className="map-value color-red">-{formatCurrency(exTotal)}</span>
+                                        </div>
+                                        <div className="map-divider"></div>
+                                        <div className="map-item highlight">
+                                            <span className="map-label">Resultado Final</span>
+                                            <span className={`map-value ${finalResult >= 0 ? 'color-green' : 'color-red'}`}>
+                                                {formatCurrency(finalResult)}
+                                            </span>
+                                        </div>
+                                        <div className="map-info-box">
+                                            <Info size={14} />
+                                            <span>Mostrando dados baseados em "{monthLabel}"</span>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Timeline Section */}
+                <div className="timeline-section">
+                    <div className="section-header">
+                        <Activity size={20} color="var(--sys-blue)" />
+                        <h2 className="section-title">Timeline Financeira</h2>
+                    </div>
+
+                    <div className="timeline-wrapper">
+                        <div className="timeline-line"></div>
+
+                        {flowData.events.length === 0 ? (
+                            <div className="empty-flow">
+                                <Activity size={48} opacity={0.2} />
+                                <p>Nenhuma transação prevista para o período selecionado.</p>
+                            </div>
+                        ) : (
+                            flowData.events.map((event: any, index: number) => {
+                                const isNegative = event.resultingBalance < 0;
+                                const isIncome = event.type === 'income';
+                                const isPast = event.status === 'confirmed';
+
+                                return (
+                                    <div key={event.id} className={`timeline-item ${isNegative ? 'is-risk' : ''} ${isPast ? 'is-past' : ''} fade-in`} style={{ animationDelay: `${index * 0.05}s` }}>
+                                        <div className="timeline-date">
+                                            <span className="date-day">{(event.date || '').split('-')[2] || '01'}</span>
+                                            <span className="date-month">{format(safeParse(event.date), 'MMM', { locale: ptBR }).toUpperCase()}</span>
+                                        </div>
+
+                                        <div className="timeline-marker">
+                                            {isIncome ? <ArrowUpCircle size={20} className="color-green" /> : <ArrowDownCircle size={20} className="color-red" />}
+                                        </div>
+
+                                        <div className="timeline-content sys-card">
+                                            <div className="timeline-main">
+                                                <div className="timeline-info">
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className="timeline-title">{event.description}</h4>
+                                                        {isPast && <div className="status-badge-ok"><Check size={10} /></div>}
+                                                    </div>
+                                                    <span className="timeline-category">
+                                                        {(data?.categories || []).find(c => c.id === event.category)?.name || 'Outros'}
+                                                    </span>
+                                                </div>
+                                                <div className="timeline-values">
+                                                    <span className={`timeline-amount ${isIncome ? 'color-green' : 'color-red'}`}>
+                                                        {isIncome ? '+' : '-'}{formatCurrency(event.value)}
+                                                    </span>
+                                                    <div className={`timeline-balance ${isNegative ? 'is-warning' : ''}`}>
+                                                        <span className="balance-label">Saldo:</span>
+                                                        <span className="balance-value">{formatCurrency(event.resultingBalance)}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        )}
+                                            {isNegative && (
+                                                <div className="timeline-alert">
+                                                    <AlertTriangle size={14} />
+                                                    <span>Risco de saldo negativo nesta data</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })
-                    )}
+                                );
+                            })
+                        )}
+                    </div>
                 </div>
             </div>
 
             <style dangerouslySetInnerHTML={{
                 __html: `
-                .flow-container {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 2rem;
-                    padding-bottom: 4rem;
+                .flow-container { display: flex; flex-direction: column; gap: 2.5rem; padding-bottom: 4rem; }
+                .flow-grid-analysis { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px; }
+                
+                @media (max-width: 1024px) {
+                    .flow-grid-analysis { grid-template-columns: 1fr; }
                 }
 
+                .chart-card { padding: 24px; min-height: 380px; display: flex; flex-direction: column; }
+                .chart-header { display: flex; alignItems: center; gap: 10px; margin-bottom: 24px; }
+                .chart-title { fontSize: 16px; font-weight: 800; margin: 0; color: var(--sys-text-primary); }
+                .chart-body { flex: 1; height: 280px; }
+
+                .map-card { padding: 24px; display: flex; flex-direction: column; }
+                .map-body { display: flex; flex-direction: column; gap: 16px; flex: 1; }
+                
                 .flow-mode-toggle {
-                    display: flex;
-                    padding: 6px;
-                    gap: 6px;
-                    background: var(--bg-secondary);
-                    border-radius: 12px;
-                    align-self: flex-start;
+                    display: flex; padding: 5px; gap: 5px; background: var(--bg-secondary);
+                    border-radius: 14px; align-self: flex-start; border: 1px solid var(--sys-border);
                 }
 
                 .toggle-btn {
-                    padding: 8px 16px;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 0.875rem;
-                    font-weight: 700;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    background: transparent;
-                    color: var(--text-secondary);
+                    padding: 8px 18px; border: none; border-radius: 10px; font-size: 0.85rem;
+                    font-weight: 700; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    background: transparent; color: var(--text-secondary);
                 }
 
                 .toggle-btn.active {
-                    background: white;
-                    color: var(--sys-blue);
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                    background: var(--sys-card-bg); color: var(--sys-blue);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid var(--sys-border);
                 }
 
-                .flow-summary-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                    gap: 1.5rem;
-                }
+                .flow-summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
 
                 .flow-status-card {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    padding: 1.5rem;
-                    border-radius: 16px;
-                    border: 1px solid var(--border-light);
+                    display: flex; justify-content: space-between; align-items: center;
+                    padding: 1.75rem; border-radius: 20px; border: 1px solid var(--sys-border);
+                    background: var(--sys-card-bg); transition: transform 0.3s;
                 }
+                .flow-status-card:hover { transform: translateY(-4px); }
 
-                .flow-status-info {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.25rem;
-                }
-
-                .flow-status-label {
-                    font-size: 0.875rem;
-                    color: var(--text-secondary);
-                    font-weight: 500;
-                }
-
-                .flow-status-value {
-                    font-size: 1.75rem;
-                    font-weight: 800;
-                    letter-spacing: -0.02em;
-                }
+                .flow-status-info { display: flex; flex-direction: column; gap: 0.5rem; }
+                .flow-status-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+                .flow-status-value { font-size: 2rem; font-weight: 900; letter-spacing: -0.03em; }
 
                 .flow-status-icon {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
+                    width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
                 }
 
-                .flow-status-icon.current { background: #eff6ff; color: #3b82f6; }
-                .flow-status-icon.risk { background: #fef2f2; color: #ef4444; }
-                .flow-status-icon.healthy { background: #f0fdf4; color: #10b981; }
+                .flow-status-icon.current { background: rgba(59, 130, 246, 0.12); color: #3b82f6; }
+                .flow-status-icon.risk { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+                .flow-status-icon.healthy { background: rgba(16, 185, 129, 0.12); color: #10b981; }
 
                 .risk .flow-status-value { color: #ef4444; }
                 .healthy .flow-status-value { color: #10b981; }
 
-                /* Past transactions style */
-                .is-past {
-                    opacity: 0.7;
+                .map-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
+                .map-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+                .map-value { font-family: var(--sys-font-display); font-size: 15px; font-weight: 800; }
+                .map-divider { height: 1px; background: var(--sys-border); margin: 8px 0; }
+
+                .map-item.highlight {
+                    padding: 14px 16px; background: var(--bg-secondary); border-radius: 12px; margin-top: auto;
+                    border: 1px solid var(--sys-border);
                 }
-                .is-past .timeline-content {
-                    background: #f8fafc;
-                }
-                .status-badge-mini {
-                    font-size: 9px;
-                    font-weight: 800;
-                    background: #e2e8f0;
-                    color: #64748b;
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    text-transform: uppercase;
+                .map-item.highlight .map-label { color: var(--text-primary); font-weight: 700; font-size: 14px; }
+                .map-item.highlight .map-value { font-size: 1.25rem; }
+
+                .map-info-box {
+                    display: flex; align-items: center; gap: 8px; padding: 10px;
+                    border-radius: 8px; background: rgba(59,130,246,0.05); color: #3b82f6;
+                    font-size: 11px; font-weight: 600; margin-top: 12px;
                 }
 
-                /* Timeline Styles */
-                .timeline-wrapper {
-                    position: relative;
-                    padding-left: 80px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 1.5rem;
-                }
+                .timeline-section { margin-top: 1rem; }
+                .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; }
+                .section-title { font-size: 1.5rem; font-weight: 900; margin: 0; color: var(--text-primary); letter-spacing: -0.02em; }
 
-                .timeline-line {
-                    position: absolute;
-                    left: 100px;
-                    top: 0;
-                    bottom: 0;
-                    width: 2px;
-                    background: var(--border-light);
-                    z-index: 0;
-                }
+                .timeline-wrapper { position: relative; padding-left: 90px; display: flex; flex-direction: column; gap: 1.5rem; }
+                .timeline-line { position: absolute; left: 115px; top: 0; bottom: 0; width: 2px; background: var(--sys-border); opacity: 0.5; }
 
-                .timeline-item {
-                    position: relative;
-                    display: flex;
-                    align-items: flex-start;
-                    gap: 40px;
-                }
-
+                .timeline-item { position: relative; display: flex; align-items: flex-start; gap: 40px; }
                 .timeline-date {
-                    position: absolute;
-                    left: -80px;
-                    width: 60px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-end;
-                    padding-top: 8px;
+                    position: absolute; left: -90px; width: 70px; display: flex; flex-direction: column; align-items: flex-end; padding-top: 12px;
                 }
+                .date-day { font-size: 1.5rem; font-weight: 900; color: var(--text-primary); line-height: 1; }
+                .date-month { font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); }
 
-                .date-day { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); }
-                .date-month { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }
-
-                .timeline-marker {
-                    position: relative;
-                    z-index: 1;
-                    background: var(--bg-primary);
-                    padding: 4px;
-                    margin-top: 8px;
-                    margin-left: -5px;
-                }
+                .timeline-marker { position: relative; z-index: 1; background: var(--sys-bg); padding: 6px; margin-top: 12px; margin-left: -5px; }
 
                 .timeline-content {
-                    flex: 1;
-                    padding: 1.25rem;
-                    transition: transform 0.2s;
+                    flex: 1; padding: 1.5rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    background: var(--sys-card-bg); border: 1px solid var(--sys-border); border-radius: 18px;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
                 }
 
-                .timeline-content:hover {
-                    transform: translateX(5px);
-                }
+                .timeline-item.is-past { opacity: 0.65; }
+                .timeline-item.is-past .timeline-content { background: var(--bg-tertiary); box-shadow: none; }
 
-                .timeline-main {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
+                .timeline-content:hover { transform: translateX(8px); border-color: var(--sys-blue); }
 
-                .timeline-title { font-size: 1rem; font-weight: 700; margin-bottom: 2px; color: var(--text-primary); }
-                .timeline-category { font-size: 0.75rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+                .timeline-main { display: flex; justify-content: space-between; align-items: center; }
+                .timeline-title { font-size: 1.05rem; font-weight: 800; margin-bottom: 4px; color: var(--text-primary); }
+                .timeline-category { font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
 
-                .timeline-values { text-align: right; }
-                .timeline-amount { display: block; font-size: 1.125rem; font-weight: 800; margin-bottom: 4px; }
+                .timeline-values { text-align: right; display: flex; flex-direction: column; gap: 8px; }
+                .timeline-amount { display: block; font-size: 1.25rem; font-weight: 850; }
                 
                 .timeline-balance {
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 4px 10px;
-                    background: var(--bg-tertiary);
-                    border-radius: 8px;
-                    font-size: 0.75rem;
+                    display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+                    background: var(--bg-secondary); border-radius: 30px; font-size: 0.7rem; border: 1px solid var(--sys-border);
                 }
+                .timeline-balance.is-warning { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); }
+                .timeline-balance.is-warning .balance-value { color: #ef4444; }
 
-                .balance-label { color: var(--text-secondary); font-weight: 500; }
-                .balance-value { font-weight: 700; color: var(--text-primary); }
+                .balance-label { color: var(--text-secondary); font-weight: 600; text-transform: uppercase; font-size: 0.65rem; }
+                .balance-value { font-weight: 800; color: var(--text-primary); }
 
-                .bg-red-soft { background: #fef2f2 !important; }
+                .status-badge-ok {
+                    display: flex; align-items: center; justify-content: center; width: 16px; height: 16px;
+                    background: var(--sys-green); color: white; border-radius: 50%;
+                }
 
                 .timeline-alert {
-                    margin-top: 12px;
-                    padding-top: 12px;
-                    border-top: 1px dashed #fecaca;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    color: #ef4444;
-                    font-size: 0.75rem;
-                    font-weight: 600;
+                    margin-top: 14px; padding: 8px 12px; background: rgba(239, 68, 68, 0.06);
+                    border-radius: 8px; display: flex; align-items: center; gap: 10px;
+                    color: #ef4444; font-size: 0.75rem; font-weight: 700; border: 1px dashed rgba(239,68,68,0.2);
                 }
 
-                .empty-flow {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 4rem;
-                    color: var(--text-secondary);
-                    text-align: center;
-                }
+                .empty-flow { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 0; color: var(--text-secondary); text-align: center; }
+                .empty-flow p { font-size: 1rem; font-weight: 600; margin-top: 1rem; }
 
-                @media (max-width: 640px) {
-                    .flow-mode-toggle { align-self: stretch; }
-                    .toggle-btn { flex: 1; font-size: 0.75rem; padding: 10px 8px; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                .fade-in { animation: fadeIn 0.4s ease-out forwards; opacity: 0; }
+
+                @media (max-width: 768px) {
                     .timeline-wrapper { padding-left: 20px; }
-                    .timeline-line { left: 40px; }
-                    .timeline-date { position: static; width: auto; flex-direction: row; gap: 8px; align-items: baseline; margin-bottom: 10px; }
-                    .timeline-item { flex-direction: column; gap: 10px; }
+                    .timeline-line { left: 45px; }
+                    .timeline-date { position: relative; left: 0; width: auto; flex-direction: row; gap: 10px; align-items: center; margin-bottom: 12px; }
+                    .timeline-item { flex-direction: column; gap: 5px; }
                     .timeline-marker { display: none; }
-                    .timeline-main { flex-direction: column; align-items: flex-start; gap: 10px; }
-                    .timeline-values { text-align: left; width: 100%; }
+                    .timeline-main { flex-direction: column; align-items: flex-start; gap: 16px; }
+                    .timeline-values { text-align: left; width: 100%; align-items: flex-start; }
+                    .timeline-content { border-radius: 20px; }
                 }
 
                 @keyframes pulse {
-                    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-                    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-                    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+                    70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
                 }
-
-                .animate-pulse {
-                    animation: pulse 2s infinite;
-                }
+                .animate-pulse { animation: pulse 2.5s infinite ease-in-out; }
             `}} />
         </PageLayout>
     );

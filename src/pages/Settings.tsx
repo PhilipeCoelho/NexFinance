@@ -95,9 +95,9 @@ const Settings: React.FC = () => {
                     onClick={() => handleCurrencyChange(curr.code)}
                     style={{
                       flex: 1, padding: '12px 16px', borderRadius: '12px', border: '2px solid', transition: 'all 0.2s', fontWeight: 700, fontSize: '14px', cursor: 'pointer',
-                      backgroundColor: settings.currency === curr.code ? '#eff6ff' : 'transparent',
-                      borderColor: settings.currency === curr.code ? '#3b82f6' : '#f1f5f9',
-                      color: settings.currency === curr.code ? '#2563eb' : '#64748b'
+                      backgroundColor: settings.currency === curr.code ? 'var(--sys-bg-blue)' : 'transparent',
+                      borderColor: settings.currency === curr.code ? 'var(--sys-blue)' : 'var(--sys-border)',
+                      color: settings.currency === curr.code ? 'var(--sys-blue)' : 'var(--sys-text-secondary)'
                     }}
                   >
                     {curr.name}
@@ -119,9 +119,9 @@ const Settings: React.FC = () => {
                 onClick={() => handleThemeChange(t.id as any)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', borderRadius: '12px', border: '2px solid', transition: 'all 0.2s', fontWeight: 700, fontSize: '14px', cursor: 'pointer',
-                  backgroundColor: settings.theme === t.id ? '#eff6ff' : 'transparent',
-                  borderColor: settings.theme === t.id ? '#3b82f6' : '#f1f5f9',
-                  color: settings.theme === t.id ? '#2563eb' : '#64748b'
+                  backgroundColor: settings.theme === t.id ? 'var(--sys-bg-blue)' : 'transparent',
+                  borderColor: settings.theme === t.id ? 'var(--sys-blue)' : 'var(--sys-border)',
+                  color: settings.theme === t.id ? 'var(--sys-blue)' : 'var(--sys-text-secondary)'
                 }}
               >
                 <t.icon size={20} />
@@ -137,10 +137,10 @@ const Settings: React.FC = () => {
             <Shield size={16} /> Segurança e Dados
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s' }}>
+            <button style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-gray)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Lock size={18} color="#94a3b8" />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#475569' }}>Alterar Palavra-passe</span>
+                <Lock size={18} color="var(--sys-text-secondary)" />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-text-primary)' }}>Alterar Palavra-passe</span>
               </div>
               <ChevronRight size={16} color="#cbd5e1" />
             </button>
@@ -153,18 +153,18 @@ const Settings: React.FC = () => {
               onChange={handleImportBackup}
             />
             <button
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: '#f0fdfa', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-green)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
               onClick={() => fileInputRef.current?.click()}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <UploadCloud size={18} color="#14b8a6" />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#0d9488' }}>Importar Backup do Vercel (Substituir Dados)</span>
+                <UploadCloud size={18} color="var(--sys-green)" />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-green)' }}>Importar Backup do Vercel (Substituir Dados)</span>
               </div>
-              <ChevronRight size={16} color="#5eead4" />
+              <ChevronRight size={16} color="var(--sys-green)" opacity={0.5} />
             </button>
 
             <button
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: '#faf5ff', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-purple)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
               onClick={() => {
                 recalculateBalances();
                 alert("Auditoria completa: Todos os saldos de contas foram matematicamente reconstruídos!");
@@ -174,18 +174,18 @@ const Settings: React.FC = () => {
                 <Database size={18} color="#a855f7" />
                 <span style={{ fontSize: '14px', fontWeight: 700, color: '#9333ea' }}>Reconstruir Saldos (Auditoria Matemática)</span>
               </div>
-              <ChevronRight size={16} color="#d8b4fe" />
+              <ChevronRight size={16} color="#d8b4fe" opacity={0.5} />
             </button>
 
             <button
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: '#fef2f2', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-red)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
               onClick={() => hardReset()}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Database size={18} color="#f87171" />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#dc2626' }}>Sincronizar/Limpar Dados (Baseado na Produção)</span>
+                <Database size={18} color="var(--sys-red)" />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-red)' }}>Sincronizar/Limpar Dados (Baseado na Produção)</span>
               </div>
-              <ChevronRight size={16} color="#fca5a5" />
+              <ChevronRight size={16} color="var(--sys-red)" opacity={0.5} />
             </button>
           </div>
         </section>

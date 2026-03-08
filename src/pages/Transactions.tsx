@@ -266,7 +266,7 @@ const Transactions: React.FC = () => {
           </table>
           {sortedTransactions.length === 0 && (
             <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <Activity size={40} color="#e2e8f0" style={{ margin: '0 auto 16px auto' }} />
+              <Activity size={40} color="var(--sys-border)" style={{ margin: '0 auto 16px auto' }} />
               <p style={{ color: '#94a3b8', fontSize: '14px' }}>Nenhuma transação encontrada para este período.</p>
             </div>
           )}

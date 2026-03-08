@@ -126,7 +126,7 @@ const AccountModal: React.FC<AccountModalProps> = ({ isOpen, onClose, editingAcc
 
     return createPortal(
         <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content glass step-modal" onClick={e => e.stopPropagation()}>
+            <div className="step-modal glass" onClick={e => e.stopPropagation()}>
                 <header className="modal-header">
                     <div className="step-indicator">{editingAccount ? 'Editar Conta' : `Passo ${step} de 4`}</div>
                     <button className="close-btn" onClick={onClose}><X size={18} /></button>

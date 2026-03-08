@@ -185,7 +185,7 @@ const Planning: React.FC = () => {
                             </div>
                         ) : (
                             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                                <PieChart size={40} color="#e2e8f0" style={{ margin: '0 auto 16px auto' }} />
+                                <PieChart size={40} color="var(--sys-border)" style={{ margin: '0 auto 16px auto' }} />
                                 <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: 20 }}>Você ainda não definiu orçamentos para este mês.</p>
                                 <button className="sys-btn-secondary" style={{ margin: '0 auto' }} onClick={() => setIsBudgetModalOpen(true)}>COMEÇAR AGORA</button>
                             </div>
@@ -251,7 +251,7 @@ const Planning: React.FC = () => {
                             })
                         ) : (
                             <div className="sys-card" style={{ textAlign: 'center', padding: '40px 20px' }}>
-                                <Target size={40} color="#e2e8f0" style={{ margin: '0 auto 16px auto' }} />
+                                <Target size={40} color="var(--sys-border)" style={{ margin: '0 auto 16px auto' }} />
                                 <p style={{ color: '#94a3b8', fontSize: 14, marginBottom: 20 }}>Nenhum objetivo definido ainda.</p>
                                 <button className="sys-btn-primary" style={{ margin: '0 auto' }} onClick={() => setIsGoalModalOpen(true)}>DEFINIR MINHA PRIMEIRA META</button>
                             </div>

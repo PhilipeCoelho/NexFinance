@@ -258,7 +258,7 @@ const Income: React.FC = () => {
                     </table>
                     {sortedIncome.length === 0 && (
                         <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-                            <ArrowUpCircle size={40} color="#e2e8f0" style={{ margin: '0 auto 16px auto' }} />
+                            <ArrowUpCircle size={40} color="var(--sys-border)" style={{ margin: '0 auto 16px auto' }} />
                             <p style={{ color: '#94a3b8', fontSize: '14px' }}>Nenhuma receita encontrada para este período.</p>
                         </div>
                     )}

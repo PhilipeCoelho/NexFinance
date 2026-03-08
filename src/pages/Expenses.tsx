@@ -258,7 +258,7 @@ const Expenses: React.FC = () => {
                     </table>
                     {sortedExpenses.length === 0 && (
                         <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-                            <ArrowDownCircle size={40} color="#e2e8f0" style={{ margin: '0 auto 16px auto' }} />
+                            <ArrowDownCircle size={40} color="var(--sys-border)" style={{ margin: '0 auto 16px auto' }} />
                             <p style={{ color: '#94a3b8', fontSize: '14px' }}>Nenhuma despesa encontrada para este período.</p>
                         </div>
                     )}

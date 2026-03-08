@@ -107,16 +107,16 @@ const emptyContext = (): FinanceContextData => ({
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
     { id: 'proj_30', label: 'Projeção 30 dias', visible: true },
+    { id: 'chart_flow', label: 'Fluxo Financeiro do Mês', visible: true },
+    { id: 'chart_categories', label: 'Distribuição por Categoria', visible: true },
+    { id: 'summary_balance', label: 'Balanço do Mês (Lateral)', visible: true },
+    { id: 'intelligence', label: 'Inteligência NexFinance', visible: true },
+    { id: 'recurring', label: 'Compromissos Recorrentes', visible: true },
+    { id: 'predictions', label: 'Previsão de Saldo Futuro', visible: true },
     { id: 'upcoming', label: 'Próximos vencimentos', visible: true },
-    { id: 'pending', label: 'Despesas pendentes', visible: true },
-    { id: 'accounts', label: 'Contas', visible: true },
-    { id: 'cards', label: 'Cartões de crédito', visible: true },
-    { id: 'categories', label: 'Despesas por categoria', visible: true },
-    { id: 'planning', label: 'Planejamento mensal', visible: true },
-    { id: 'balance', label: 'Balanço mensal', visible: true },
-    { id: 'frequency', label: 'Frequência de gastos', visible: true },
-    { id: 'savings', label: 'Economia mensal', visible: true },
     { id: 'goals', label: 'Objetivos', visible: true },
+    { id: 'orcamento', label: 'Orçamento por Categoria', visible: true },
+    { id: 'alertas', label: 'Alertas do Sistema', visible: true },
 ];
 
 export const useFinanceStore = create<FinanceState>()(
