@@ -403,15 +403,25 @@ if (typeof window !== 'undefined') {
 
     supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
-            const { data } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
+            const { data, error } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
             if (data?.state) {
-                useFinanceStore.setState(data.state);
+                // Merge cloud state with local if local is empty
+                const currentState = useFinanceStore.getState();
+                const totalLocalTransactions = (currentState.personalData?.transactions?.length || 0) + (currentState.businessData?.transactions?.length || 0);
+
+                if (totalLocalTransactions === 0) {
+                    useFinanceStore.setState(data.state);
+                } else {
+                    console.log("SYNC: Local data detected. Skipping cloud overwrite.");
+                }
             }
         }
     });
 
     useFinanceStore.subscribe((state) => {
-        if (state.session?.user) {
+        // Only push to cloud if there's actual data to avoid wiping cloud with empty local
+        const hasData = state.personalData.transactions.length > 0 || state.businessData.transactions.length > 0;
+        if (state.session?.user && hasData) {
             const statePayload = {
                 currentContext: state.currentContext,
                 personalData: state.personalData,

@@ -40,6 +40,22 @@ const Settings: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handleExportBackup = () => {
+    const backupData = {
+      personalData: data,
+      businessData: useFinanceStore.getState().businessData,
+      settings: settings,
+      version: 1,
+      exportedAt: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `nexfinance_backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+  };
+
   const handleCurrencyChange = (currency: string) => {
     setCurrency(currency);
   };
@@ -70,10 +86,12 @@ const Settings: React.FC = () => {
       </div>
       <div className="sys-card sys-summary-item">
         <div className="sys-summary-info">
-          <span className="sys-summary-label">Versão do Sistema</span>
-          <span className="sys-summary-value" style={{ fontSize: '18px', color: '#fbbf24' }}>v1.2.0</span>
+          <span className="sys-summary-label">Registros Locais</span>
+          <span className="sys-summary-value" style={{ fontSize: '18px', color: 'var(--sys-primary)' }}>
+            {data.transactions.length} Transações
+          </span>
         </div>
-        <div className="sys-summary-icon-box" style={{ backgroundColor: '#fbbf24' }}><Zap size={24} /></div>
+        <div className="sys-summary-icon-box" style={{ backgroundColor: 'var(--sys-bg-blue)' }}><Database size={24} color="var(--sys-blue)" /></div>
       </div>
     </>
   );
@@ -158,9 +176,20 @@ const Settings: React.FC = () => {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <UploadCloud size={18} color="var(--sys-green)" />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-green)' }}>Importar Backup do Vercel (Substituir Dados)</span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-green)' }}>Importar Backup (Substituir Dados Atuais)</span>
               </div>
               <ChevronRight size={16} color="var(--sys-green)" opacity={0.5} />
+            </button>
+
+            <button
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-blue)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
+              onClick={handleExportBackup}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Database size={18} color="var(--sys-blue)" />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-blue)' }}>Exportar Backup Local (Segurança)</span>
+              </div>
+              <ChevronRight size={16} color="var(--sys-blue)" opacity={0.5} />
             </button>
 
             <button
