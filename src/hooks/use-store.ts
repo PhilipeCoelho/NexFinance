@@ -71,6 +71,8 @@ interface FinanceState {
     deleteGoal: (id: string) => void;
     importVercelBackup: (data: any) => void;
     experimental_recoverData: () => Promise<boolean>;
+    pushToCloud: () => Promise<{ success: boolean; error: any }>;
+    pullFromCloud: () => Promise<{ success: boolean; error: any }>;
 }
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
@@ -374,6 +376,42 @@ export const useFinanceStore = create<FinanceState>()(
                 });
                 return recovered;
             },
+
+            pushToCloud: async () => {
+                const state = get();
+                if (!state.session?.user) return { success: false, error: 'Not authenticated' };
+
+                const payload = {
+                    currentContext: state.currentContext,
+                    personalData: state.personalData,
+                    businessData: state.businessData,
+                    settings: state.settings,
+                    referenceMonth: state.referenceMonth,
+                    viewMonth: state.viewMonth
+                };
+
+                const { error } = await supabase.from('user_sync').upsert({
+                    user_id: state.session.user.id,
+                    state: payload,
+                    updated_at: new Date().toISOString()
+                });
+
+                return { success: !error, error };
+            },
+
+            pullFromCloud: async () => {
+                const state = get();
+                if (!state.session?.user) return { success: false, error: 'Not authenticated' };
+
+                const { data, error } = await supabase.from('user_sync').select('state').eq('user_id', state.session.user.id).single();
+
+                if (data?.state) {
+                    set(data.state);
+                    return { success: true, error: null };
+                }
+
+                return { success: false, error: error || 'No data found' };
+            },
         }),
         {
             name: 'nexfinance-storage',
@@ -431,49 +469,20 @@ if (typeof window !== 'undefined') {
 
     supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
-            const { data, error } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
-            if (data?.state) {
-                // Merge cloud state with local if local is empty
-                const currentState = useFinanceStore.getState();
-                const totalLocalTransactions = (currentState.personalData?.transactions?.length || 0) + (currentState.businessData?.transactions?.length || 0);
+            // Background load only if current local is EMPTY to recover on first login
+            const currentState = useFinanceStore.getState();
+            const totalLocalTransactions = (currentState.personalData?.transactions?.length || 0) + (currentState.businessData?.transactions?.length || 0);
 
-                if (totalLocalTransactions === 0) {
+            if (totalLocalTransactions === 0) {
+                const { data } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
+                if (data?.state) {
                     useFinanceStore.setState(data.state);
-                } else {
-                    console.log("SYNC: Local data detected. Skipping cloud overwrite.");
+                    console.log("SYNC: Auto-restored empty local state from cloud.");
                 }
             }
         }
     });
 
-    let isInitialLoad = true;
-
-    useFinanceStore.subscribe((state) => {
-        // SAFETY: NEVER push to cloud if transactions are 0, unless it's explicitly cleared
-        // This prevents overwriting a full cloud DB with an empty local state during boot
-        const hasData = (state.personalData?.transactions?.length || 0) > 0 || (state.businessData?.transactions?.length || 0) > 0;
-
-        if (state.session?.user && hasData && !isInitialLoad) {
-            const statePayload = {
-                currentContext: state.currentContext,
-                personalData: state.personalData,
-                businessData: state.businessData,
-                settings: state.settings,
-                referenceMonth: state.referenceMonth,
-                viewMonth: state.viewMonth
-            };
-            supabase.from('user_sync').upsert({
-                user_id: state.session.user.id,
-                state: statePayload,
-                updated_at: new Date().toISOString()
-            }).then(({ error }) => {
-                if (!error) console.log("CLOUD: Sync complete");
-            });
-        }
-
-        // After the first few seconds or first subscription trigger, we assume the app is hydrated
-        if (isInitialLoad) {
-            setTimeout(() => { isInitialLoad = false; }, 5000);
-        }
-    });
+    // AUTO-SYNC DISABLED for safety as requested by user.
+    // Sync is now manual via actions or triggered by specific UI events.
 }

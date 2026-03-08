@@ -19,9 +19,10 @@ import {
 } from 'lucide-react';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
 import PageLayout from '@/components/PageLayout';
+import { supabase } from '@/services/supabase';
 
 const Settings: React.FC = () => {
-  const { settings, setCurrency, setTheme, hardReset, importVercelBackup, recalculateBalances } = useFinanceStore();
+  const { settings, setCurrency, setTheme, hardReset, importVercelBackup, recalculateBalances, pushToCloud, pullFromCloud, user, signOut } = useFinanceStore();
   const data = useCurrentData();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -79,12 +80,18 @@ const Settings: React.FC = () => {
 
   const summaryPanel = (
     <>
-      <div className="sys-card sys-summary-item">
-        <div className="sys-summary-info">
-          <span className="sys-summary-label">Utilizador</span>
-          <span className="sys-summary-value" style={{ fontSize: '18px' }}>NexFinance Pro</span>
+      <div className="sys-card sys-summary-item" style={{ gap: '12px' }}>
+        <div className="sys-summary-info" style={{ flex: 1 }}>
+          <span className="sys-summary-label">Sessão Ativa</span>
+          <span className="sys-summary-value" style={{ fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email || 'Visitante'}</span>
         </div>
-        <div className="sys-summary-icon-box" style={{ backgroundColor: '#64748b' }}><User size={24} /></div>
+        <button
+          onClick={() => signOut()}
+          className="sys-btn-minimal"
+          style={{ padding: '8px', color: 'var(--sys-red)' }}
+        >
+          Sair
+        </button>
       </div>
       <div className="sys-card sys-summary-item">
         <div className="sys-summary-info">
@@ -172,15 +179,43 @@ const Settings: React.FC = () => {
               accept=".json"
               onChange={handleImportBackup}
             />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '8px' }}>
+              <button
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', backgroundColor: 'var(--sys-bg-blue)', borderRadius: '12px', border: '1px solid var(--sys-blue)', cursor: 'pointer', transition: 'all 0.2s' }}
+                onClick={async () => {
+                  const { success, error } = await pushToCloud();
+                  if (success) alert("Dados enviados para a nuvem com sucesso!");
+                  else alert("Erro ao sincronizar: " + (error?.message || error));
+                }}
+              >
+                <UploadCloud size={20} color="var(--sys-blue)" />
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--sys-blue)' }}>Enviar p/ Nuvem</span>
+              </button>
+
+              <button
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderRadius: '12px', border: '1px solid var(--sys-green)', cursor: 'pointer', transition: 'all 0.2s' }}
+                onClick={async () => {
+                  if (confirm("Isso substituirá seus dados locais pelos que estão salvos na nuvem. Continuar?")) {
+                    const { success, error } = await pullFromCloud();
+                    if (success) alert("Dados da nuvem restaurados com sucesso!");
+                    else alert("Erro ao baixar dados: " + (error?.message || error));
+                  }
+                }}
+              >
+                <Database size={20} color="var(--sys-green)" />
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--sys-green)' }}>Trazer da Nuvem</span>
+              </button>
+            </div>
+
             <button
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-green)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', backgroundColor: 'var(--sys-bg-gray)', borderRadius: '12px', border: 'none', cursor: 'pointer', transition: 'background-color 0.2s', width: '100%', textAlign: 'left' }}
               onClick={() => fileInputRef.current?.click()}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <UploadCloud size={18} color="var(--sys-green)" />
-                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-green)' }}>Importar Backup (Substituir Dados Atuais)</span>
+                <UploadCloud size={18} color="var(--sys-text-secondary)" />
+                <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--sys-text-primary)' }}>Importar Backup Local (Ficheiro .json)</span>
               </div>
-              <ChevronRight size={16} color="var(--sys-green)" opacity={0.5} />
+              <ChevronRight size={16} color="var(--sys-text-secondary)" opacity={0.5} />
             </button>
 
             <button
