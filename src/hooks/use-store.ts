@@ -137,23 +137,26 @@ export const useFinanceStore = create<FinanceState>()(
             },
 
             toggleWidget: (id) => set((state) => {
-                const currentWidgets = state.settings.dashboardWidgets || DEFAULT_WIDGETS;
-                const widgetIndex = currentWidgets.findIndex(w => w.id === id);
+                const prevWidgets = state.settings.dashboardWidgets || DEFAULT_WIDGETS;
 
-                let updatedWidgets;
-                if (widgetIndex !== -1) {
-                    updatedWidgets = currentWidgets.map(w =>
-                        w.id === id ? { ...w, visible: !w.visible } : w
-                    );
-                } else {
-                    const defWidget = DEFAULT_WIDGETS.find(w => w.id === id);
-                    if (defWidget) {
-                        updatedWidgets = [...currentWidgets, { ...defWidget, visible: !defWidget.visible }];
-                    } else {
-                        updatedWidgets = [...currentWidgets, { id, label: id, visible: false }];
+                // Aggressive Sync: Ensure all DEFAULT widgets exist in the current list
+                let currentWidgets = [...prevWidgets];
+                DEFAULT_WIDGETS.forEach(def => {
+                    if (!currentWidgets.some(w => w.id === def.id)) {
+                        currentWidgets.push(def);
                     }
-                }
-                return { settings: { ...state.settings, dashboardWidgets: updatedWidgets } };
+                });
+
+                const updatedWidgets = currentWidgets.map(w =>
+                    w.id === id ? { ...w, visible: !w.visible } : w
+                );
+
+                return {
+                    settings: {
+                        ...state.settings,
+                        dashboardWidgets: updatedWidgets
+                    }
+                };
             }),
 
             reorderWidgets: (startIndex, endIndex) => set((state) => {

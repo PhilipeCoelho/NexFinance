@@ -138,12 +138,13 @@ const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
 
         return (
             <div
-                className={`${!isVisible ? 'widget-hidden' : ''} ${isCustomizing ? 'wiggle' : ''}`}
+                className={`sys-widget-container shadow-sm ${!isVisible ? 'widget-hidden' : ''} ${isCustomizing ? 'wiggle' : ''}`}
                 style={{
                     position: 'relative',
                     opacity: isVisible ? 1 : 0.4,
                     gridColumn: isFullWidth ? '1 / -1' : 'span 1',
-                    filter: isVisible ? 'none' : 'grayscale(1)'
+                    filter: isVisible ? 'none' : 'grayscale(1)',
+                    transition: 'all 0.3s ease'
                 }}
             >
                 {isCustomizing && (
@@ -153,15 +154,18 @@ const FinancialIntelligence: React.FC<FinancialIntelligenceProps> = ({
                             position: 'absolute', top: -10, right: -10, zIndex: 10,
                             width: 24, height: 24, borderRadius: '50%', backgroundColor: isVisible ? '#f85149' : '#3fb950',
                             color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                            cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                            transition: 'transform 0.2s ease'
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     >
                         {isVisible ? <X size={14} /> : <Check size={14} />}
                     </button>
                 )}
                 {isVisible ? children : (
-                    <div className="sys-card" style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', backgroundColor: 'var(--bg-tertiary)' }}>
-                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>{label} Oculto</span>
+                    <div className="sys-card glass" style={{ height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderStyle: 'dashed', backgroundColor: 'var(--bg-tertiary)', opacity: 0.6 }}>
+                        <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, letterSpacing: '0.05em' }}>WIDGET "{label.toUpperCase()}" OCULTO</span>
                     </div>
                 )}
             </div>
