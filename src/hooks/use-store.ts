@@ -25,6 +25,8 @@ interface FinanceState {
     isLoading: boolean;
     referenceMonth: string;
     viewMonth: string;
+    lastUpdatedAt: string;
+    isHydrated: boolean;
 
     // Auth
     session: any | null;
@@ -73,6 +75,7 @@ interface FinanceState {
     experimental_recoverData: () => Promise<boolean>;
     pushToCloud: () => Promise<{ success: boolean; error: any }>;
     pullFromCloud: () => Promise<{ success: boolean; error: any }>;
+    updateLastUpdate: () => void;
 }
 
 const DEFAULT_WIDGETS: DashboardWidget[] = [
@@ -125,6 +128,8 @@ export const useFinanceStore = create<FinanceState>()(
             isLoading: false,
             referenceMonth: FinancialEngine.getLisbonDate('month'),
             viewMonth: FinancialEngine.getLisbonDate('month'),
+            lastUpdatedAt: new Date().toISOString(),
+            isHydrated: false,
 
             // Auth Initial State
             session: null,
@@ -133,9 +138,9 @@ export const useFinanceStore = create<FinanceState>()(
             authLoading: true,
 
             setContext: (context) => set({ currentContext: context }),
-            setCurrency: (currency) => set((state) => ({ settings: { ...state.settings, currency } })),
+            setCurrency: (currency) => set((state) => ({ settings: { ...state.settings, currency }, lastUpdatedAt: new Date().toISOString() })),
             setTheme: (theme) => {
-                set((state) => ({ settings: { ...state.settings, theme } }));
+                set((state) => ({ settings: { ...state.settings, theme }, lastUpdatedAt: new Date().toISOString() }));
                 document.documentElement.classList.remove('light', 'dark');
                 document.documentElement.classList.add(theme);
             },
@@ -159,7 +164,8 @@ export const useFinanceStore = create<FinanceState>()(
                     settings: {
                         ...state.settings,
                         dashboardWidgets: updatedWidgets
-                    }
+                    },
+                    lastUpdatedAt: new Date().toISOString()
                 };
             }),
 
@@ -167,7 +173,7 @@ export const useFinanceStore = create<FinanceState>()(
                 const widgets = [...(state.settings.dashboardWidgets || DEFAULT_WIDGETS)];
                 const [removed] = widgets.splice(startIndex, 1);
                 widgets.splice(endIndex, 0, removed);
-                return { settings: { ...state.settings, dashboardWidgets: widgets } };
+                return { settings: { ...state.settings, dashboardWidgets: widgets }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             setReferenceMonth: (month) => set({ referenceMonth: month }),
@@ -219,81 +225,83 @@ export const useFinanceStore = create<FinanceState>()(
                 const { updatedAccounts, updatedCards, updatedInvoices } = FinancialEngine.applyTransactionImpact(
                     newTransaction, state[key].accounts, state[key].creditCards, state[key].invoices
                 );
-                return {
+                const newState = {
                     [key]: {
                         ...state[key],
                         transactions: [newTransaction, ...state[key].transactions],
                         accounts: updatedAccounts,
                         creditCards: updatedCards,
                         invoices: updatedInvoices
-                    }
+                    },
+                    lastUpdatedAt: new Date().toISOString()
                 };
+                return newState;
             }),
 
             updateTransaction: (id, updated) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const transactions = state[key].transactions.map(t => t.id === id ? { ...t, ...updated } : t);
-                return { [key]: { ...state[key], transactions } };
+                return { [key]: { ...state[key], transactions }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             deleteTransaction: (id) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const transactions = state[key].transactions.filter(t => t.id !== id);
-                return { [key]: { ...state[key], transactions } };
+                return { [key]: { ...state[key], transactions }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             addAccount: (account) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const newAccount = { ...account, id: Math.random().toString(36).substr(2, 9), currentBalance: account.initialBalance, predictedBalance: account.initialBalance } as Account;
-                return { [key]: { ...state[key], accounts: [...state[key].accounts, newAccount] } };
+                return { [key]: { ...state[key], accounts: [...state[key].accounts, newAccount] }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             updateAccount: (id, updated) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const accounts = state[key].accounts.map(a => a.id === id ? { ...a, ...updated } : a);
-                return { [key]: { ...state[key], accounts } };
+                return { [key]: { ...state[key], accounts }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             deleteAccount: (id) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const accounts = state[key].accounts.filter(a => a.id !== id);
-                return { [key]: { ...state[key], accounts } };
+                return { [key]: { ...state[key], accounts }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             addCreditCard: (card) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const newCard = { ...card, id: Math.random().toString(36).substr(2, 9), limitAvailable: card.limitTotal, status: 'active' } as CreditCard;
-                return { [key]: { ...state[key], creditCards: [...state[key].creditCards, newCard] } };
+                return { [key]: { ...state[key], creditCards: [...state[key].creditCards, newCard] }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             updateCreditCard: (id, updated) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const creditCards = state[key].creditCards.map(c => c.id === id ? { ...c, ...updated } : c);
-                return { [key]: { ...state[key], creditCards } };
+                return { [key]: { ...state[key], creditCards }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             deleteCreditCard: (id) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const creditCards = state[key].creditCards.filter(c => c.id !== id);
-                return { [key]: { ...state[key], creditCards } };
+                return { [key]: { ...state[key], creditCards }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             addCategory: (category) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const newCategory = { ...category, id: Math.random().toString(36).substr(2, 9) } as Category;
-                return { [key]: { ...state[key], categories: [...state[key].categories, newCategory] } };
+                return { [key]: { ...state[key], categories: [...state[key].categories, newCategory] }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             updateCategory: (id, updated) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const categories = state[key].categories.map(c => c.id === id ? { ...c, ...updated } : c);
-                return { [key]: { ...state[key], categories } };
+                return { [key]: { ...state[key], categories }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             deleteCategory: (id) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const categories = state[key].categories.filter(c => c.id !== id);
-                return { [key]: { ...state[key], categories } };
+                return { [key]: { ...state[key], categories }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             recalculateBalances: () => set((state) => {
@@ -301,43 +309,43 @@ export const useFinanceStore = create<FinanceState>()(
                 const { rebuiltAccounts, rebuiltCards, rebuiltInvoices } = FinancialEngine.rebuildBalances(
                     state[key].transactions, state[key].accounts, state[key].creditCards, state[key].invoices
                 );
-                return { [key]: { ...state[key], accounts: rebuiltAccounts, creditCards: rebuiltCards, invoices: rebuiltInvoices } };
+                return { [key]: { ...state[key], accounts: rebuiltAccounts, creditCards: rebuiltCards, invoices: rebuiltInvoices }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             addBudget: (budget) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const newBudget = { ...budget, id: Math.random().toString(36).substr(2, 9) };
-                return { [key]: { ...state[key], budgets: [...state[key].budgets, newBudget] } };
+                return { [key]: { ...state[key], budgets: [...state[key].budgets, newBudget] }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             updateBudget: (id, updated) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const budgets = state[key].budgets.map(b => b.id === id ? { ...b, ...updated } : b);
-                return { [key]: { ...state[key], budgets } };
+                return { [key]: { ...state[key], budgets }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             deleteBudget: (id) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const budgets = state[key].budgets.filter(b => b.id !== id);
-                return { [key]: { ...state[key], budgets } };
+                return { [key]: { ...state[key], budgets }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             addGoal: (goal) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const newGoal = { ...goal, id: Math.random().toString(36).substr(2, 9) } as FinancialGoal;
-                return { [key]: { ...state[key], goals: [...state[key].goals, newGoal] } };
+                return { [key]: { ...state[key], goals: [...state[key].goals, newGoal] }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             updateGoal: (id, updated) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const goals = state[key].goals.map(g => g.id === id ? { ...g, ...updated } : g);
-                return { [key]: { ...state[key], goals } };
+                return { [key]: { ...state[key], goals }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             deleteGoal: (id) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const goals = state[key].goals.filter(g => g.id !== id);
-                return { [key]: { ...state[key], goals } };
+                return { [key]: { ...state[key], goals }, lastUpdatedAt: new Date().toISOString() };
             }),
 
             importVercelBackup: (data) => {
@@ -412,6 +420,8 @@ export const useFinanceStore = create<FinanceState>()(
 
                 return { success: false, error: error || 'No data found' };
             },
+
+            updateLastUpdate: () => set({ lastUpdatedAt: new Date().toISOString() })
         }),
         {
             name: 'nexfinance-storage',
@@ -467,22 +477,69 @@ if (typeof window !== 'undefined') {
         }
     });
 
+    // --- AUTO SYNC LOGIC ---
+    let syncTimeout: any = null;
+
     supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
-            // Background load only if current local is EMPTY to recover on first login
-            const currentState = useFinanceStore.getState();
-            const totalLocalTransactions = (currentState.personalData?.transactions?.length || 0) + (currentState.businessData?.transactions?.length || 0);
+            console.log("SYNC: User identified, checking cloud state...");
+            const { data } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
 
-            if (totalLocalTransactions === 0) {
-                const { data } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
-                if (data?.state) {
-                    useFinanceStore.setState(data.state);
-                    console.log("SYNC: Auto-restored empty local state from cloud.");
+            const currentState = useFinanceStore.getState();
+            if (data?.state) {
+                // Determine which state is newer
+                const cloudDate = new Date(data.state.lastUpdatedAt || 0);
+                const localDate = new Date(currentState.lastUpdatedAt || 0);
+
+                if (cloudDate > localDate || (currentState.personalData.transactions.length === 0 && data.state.personalData.transactions.length > 0)) {
+                    console.log("SYNC: Cloud is newer or local is empty. Restoring cloud state.");
+                    useFinanceStore.setState({ ...data.state, session, user: session.user, isHydrated: true });
+                } else {
+                    console.log("SYNC: Local is newer or same as cloud. Keeping local.");
+                    useFinanceStore.setState({ isHydrated: true });
                 }
+            } else {
+                console.log("SYNC: No cloud data found. Starting fresh or with local data.");
+                useFinanceStore.setState({ isHydrated: true });
             }
+        } else {
+            useFinanceStore.setState({ isHydrated: false });
         }
     });
 
-    // AUTO-SYNC DISABLED for safety as requested by user.
-    // Sync is now manual via actions or triggered by specific UI events.
+    useFinanceStore.subscribe((state, prevState) => {
+        // Only sync if logged in and hydrated (to avoid pushing empty states during boot)
+        if (state.session?.user && state.isHydrated) {
+            // Check if actual data changed (ignoring meta fields)
+            const dataChanged =
+                JSON.stringify(state.personalData) !== JSON.stringify(prevState.personalData) ||
+                JSON.stringify(state.businessData) !== JSON.stringify(prevState.businessData) ||
+                JSON.stringify(state.settings) !== JSON.stringify(prevState.settings);
+
+            if (dataChanged) {
+                if (syncTimeout) clearTimeout(syncTimeout);
+                syncTimeout = setTimeout(() => {
+                    console.log("SYNC: Auto-pushing changes to cloud...");
+                    const payload = {
+                        currentContext: state.currentContext,
+                        personalData: state.personalData,
+                        businessData: state.businessData,
+                        settings: state.settings,
+                        referenceMonth: state.referenceMonth,
+                        viewMonth: state.viewMonth,
+                        lastUpdatedAt: new Date().toISOString()
+                    };
+
+                    supabase.from('user_sync').upsert({
+                        user_id: state.session.user.id,
+                        state: payload,
+                        updated_at: new Date().toISOString()
+                    }).then(({ error }) => {
+                        if (error) console.error("SYNC: Failed to push changes", error);
+                        else console.log("SYNC: Changes saved to cloud.");
+                    });
+                }, 2000); // 2 second debounce
+            }
+        }
+    });
 }
