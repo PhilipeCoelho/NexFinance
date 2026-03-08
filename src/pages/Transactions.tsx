@@ -230,7 +230,7 @@ const Transactions: React.FC = () => {
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontWeight: 500, fontSize: '14px', color: 'var(--sys-text-primary)' }}>{t.description}</span>
+                          <span style={{ fontSize: '13px', color: '#64748b' }}>{t.description}</span>
                           {t.isRecurring && t.recurrence?.installmentsCount && (
                             <span style={{ fontSize: '10px', color: 'var(--sys-blue)', backgroundColor: 'var(--sys-bg-blue)', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
                               {FinancialEngine.getInstallmentText(t, referenceMonth)}
