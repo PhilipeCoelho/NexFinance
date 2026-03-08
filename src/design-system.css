@@ -133,7 +133,7 @@ body {
     background-attachment: fixed;
     color: var(--sys-text-primary);
     margin: 0;
-    font-size: 13px;
+    font-size: var(--v-nav-font-s);
     -webkit-font-smoothing: antialiased;
 }
 
@@ -276,8 +276,8 @@ body {
 .sys-content-layout {
     display: flex;
     flex: 1;
-    padding: var(--sys-space-xl);
-    gap: var(--sys-space-xl);
+    padding: var(--v-card-padding);
+    gap: var(--v-section-gap);
     min-height: calc(100vh - 72px);
 }
 
@@ -1273,4 +1273,43 @@ body {
 
 .dark .close-btn:hover {
     background: rgba(255, 255, 255, 0.1);
+}
+
+/* ===================================================
+   GLOBAL DENSITY-AWARE OVERRIDES
+   Normalizes hardcoded inline styles across all pages
+   ================================================= */
+
+/* Page titles & headers */
+.sys-page-title {
+    font-size: calc(var(--v-kpi-val-s) + 4px) !important;
+}
+
+.sys-subtitle {
+    font-size: calc(var(--v-kpi-val-s) - 2px) !important;
+}
+
+/* Summary widget values */
+.sys-summary-block-value {
+    font-size: calc(var(--v-kpi-val-s) + 2px) !important;
+}
+
+/* Reduce table action button size */
+.sys-action-btn {
+    padding: 4px !important;
+}
+
+/* Normalize summary widget padding */
+.sys-summary-widget {
+    gap: calc(var(--v-section-gap) * 0.6) !important;
+}
+
+.sys-summary-block {
+    padding-bottom: calc(var(--v-section-gap) * 0.4) !important;
+    gap: 3px !important;
+}
+
+/* Financial values */
+.sys-financial-val-sm {
+    font-size: calc(var(--v-nav-font-s) + 1px) !important;
 }
