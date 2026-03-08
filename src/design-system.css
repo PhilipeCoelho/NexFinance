@@ -66,8 +66,7 @@ body {
 .sys-page-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
 }
 
 /* Header - Glassmorphism & Sleek */
@@ -199,18 +198,16 @@ body {
 .sys-content-layout {
     display: flex;
     flex: 1;
-    overflow: hidden;
     padding: var(--sys-space-xl);
     gap: var(--sys-space-xl);
+    min-height: calc(100vh - 72px);
 }
 
 .sys-main-area {
     flex: 1;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: var(--sys-space-xl);
-    scroll-behavior: smooth;
 }
 
 .sys-main-area::-webkit-scrollbar {
@@ -740,6 +737,9 @@ body {
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border-right: 1px solid rgba(0, 0, 0, 0.05) !important;
+    position: sticky !important;
+    top: 0;
+    flex-shrink: 0;
 }
 
 .nav-item.active {

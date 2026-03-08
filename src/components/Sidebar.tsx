@@ -116,19 +116,21 @@ const Sidebar: React.FC = () => {
           flex-direction: column;
           padding: 10px;
           z-index: 100;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           overflow: hidden;
-          position: relative;
+          position: sticky;
+          top: 0;
+          flex-shrink: 0;
         }
 
         /* Hover behavior: Show icons only */
         .sidebar:hover {
-          width: 70px;
+          width: 60px;
         }
 
         /* Pinned behavior: Show everything */
         .sidebar.pinned {
-          width: 220px;
+          width: 240px;
         }
 
         .sidebar-toggle-btn {
