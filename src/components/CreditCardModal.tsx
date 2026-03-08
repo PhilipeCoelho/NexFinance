@@ -115,7 +115,7 @@ const CreditCardModal: React.FC<CreditCardModalProps> = ({ isOpen, onClose, edit
                                     style={{
                                         width: '100%', aspectRatio: '1', borderRadius: '12px',
                                         backgroundColor: bank.color, display: 'flex', alignItems: 'center',
-                                        justify: 'center', color: 'white', border: formData.institutionId === bank.id ? '3px solid white' : 'none',
+                                        justifyContent: 'center', color: 'white', border: formData.institutionId === bank.id ? '3px solid white' : 'none',
                                         boxShadow: formData.institutionId === bank.id ? '0 0 0 2px var(--sys-blue)' : 'none',
                                         cursor: 'pointer'
                                     }}
