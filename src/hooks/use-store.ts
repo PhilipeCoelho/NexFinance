@@ -226,24 +226,28 @@ export const useFinanceStore = create<FinanceState>()(
                 authLoading: false
             }),
 
-            // Simplified Data Actions for brevity
+            // Data Actions with automatic balance reconstruction
             addTransaction: (transaction) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
                 const newTransaction = { ...transaction, id: Math.random().toString(36).substr(2, 9), createdAt: new Date().toISOString() } as Transaction;
-                const { updatedAccounts, updatedCards, updatedInvoices } = FinancialEngine.applyTransactionImpact(
-                    newTransaction, state[key].accounts, state[key].creditCards, state[key].invoices
+
+                const updatedTransactions = [newTransaction, ...state[key].transactions];
+
+                // Recalculate everything to ensure consistency
+                const { rebuiltAccounts, rebuiltCards, rebuiltInvoices } = FinancialEngine.rebuildBalances(
+                    updatedTransactions, state[key].accounts, state[key].creditCards, state[key].invoices
                 );
-                const newState = {
+
+                return {
                     [key]: {
                         ...state[key],
-                        transactions: [newTransaction, ...state[key].transactions],
-                        accounts: updatedAccounts,
-                        creditCards: updatedCards,
-                        invoices: updatedInvoices
+                        transactions: updatedTransactions,
+                        accounts: rebuiltAccounts,
+                        creditCards: rebuiltCards,
+                        invoices: rebuiltInvoices
                     },
                     lastUpdatedAt: new Date().toISOString()
                 };
-                return newState;
             }),
 
             updateTransaction: (id, updated, scope = 'all', refMonth) => set((state) => {
@@ -267,12 +271,12 @@ export const useFinanceStore = create<FinanceState>()(
                     updatedTransactions[originalIndex] = updatedOriginal;
 
                     // 2. Create a new point instance for this month
-                    const currentDay = original.date.split('-')[2] || '01';
+                    const currentDay = (original.date || '').split('-')[2] || '01';
                     const newInstance: Transaction = {
                         ...original,
                         ...updated,
                         id: Math.random().toString(36).substr(2, 9),
-                        date: `${refMonth}-${currentDay}`,
+                        date: `${refMonth}-${currentDay.padStart(2, '0')}`,
                         isFixed: false,
                         isRecurring: false,
                         recurrence: undefined,
@@ -281,11 +285,8 @@ export const useFinanceStore = create<FinanceState>()(
                     updatedTransactions.unshift(newInstance);
                 }
                 else if (scope === 'future' && refMonth) {
-                    // Logic: "O que passou, passou". Scale back original and start new from here.
-
-                    // 1. End original in the previous month
                     const [year, month] = refMonth.split('-').map(Number);
-                    const prevDate = new Date(year, month - 2, 1); // JS months are 0-indexed, month-1 is current, month-2 is prev
+                    const prevDate = new Date(year, month - 2, 1);
                     const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
 
                     const updatedOriginal = {
@@ -297,30 +298,56 @@ export const useFinanceStore = create<FinanceState>()(
                     };
                     updatedTransactions[originalIndex] = updatedOriginal;
 
-                    // 2. Start a new series from refMonth
-                    const currentDay = original.date.split('-')[2] || '01';
+                    const currentDay = (original.date || '').split('-')[2] || '01';
                     const newSeries: Transaction = {
                         ...original,
                         ...updated,
                         id: Math.random().toString(36).substr(2, 9),
-                        date: `${refMonth}-${currentDay}`,
+                        date: `${refMonth}-${currentDay.padStart(2, '0')}`,
                         createdAt: new Date().toISOString()
-                        // recurrence remains same as updated or original if not in updated
                     };
                     updatedTransactions.unshift(newSeries);
                 }
                 else {
-                    // Standard 'all' scope
                     updatedTransactions = updatedTransactions.map(t => t.id === id ? { ...t, ...updated } : t);
                 }
 
-                return { [key]: { ...currentData, transactions: updatedTransactions }, lastUpdatedAt: new Date().toISOString() };
+                // Recalculate balances after any update
+                const { rebuiltAccounts, rebuiltCards, rebuiltInvoices } = FinancialEngine.rebuildBalances(
+                    updatedTransactions, currentData.accounts, currentData.creditCards, currentData.invoices
+                );
+
+                return {
+                    [key]: {
+                        ...currentData,
+                        transactions: updatedTransactions,
+                        accounts: rebuiltAccounts,
+                        creditCards: rebuiltCards,
+                        invoices: rebuiltInvoices
+                    },
+                    lastUpdatedAt: new Date().toISOString()
+                };
             }),
 
             deleteTransaction: (id) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
-                const transactions = state[key].transactions.filter(t => t.id !== id);
-                return { [key]: { ...state[key], transactions }, lastUpdatedAt: new Date().toISOString() };
+                const updatedTransactions = state[key].transactions.filter(t => t.id !== id);
+
+                // Rebuild balances even on delete
+                const { rebuiltAccounts, rebuiltCards, rebuiltInvoices } = FinancialEngine.rebuildBalances(
+                    updatedTransactions, state[key].accounts, state[key].creditCards, state[key].invoices
+                );
+
+                return {
+                    [key]: {
+                        ...state[key],
+                        transactions: updatedTransactions,
+                        accounts: rebuiltAccounts,
+                        creditCards: rebuiltCards,
+                        invoices: rebuiltInvoices
+                    },
+                    lastUpdatedAt: new Date().toISOString()
+                };
             }),
 
             addAccount: (account) => set((state) => {
