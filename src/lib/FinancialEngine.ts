@@ -184,6 +184,7 @@ export class FinancialEngine {
         const startBalance = this.calculateProjectedInitialBalance(transactions, accounts, targetMonth);
         const events: any[] = [];
         let runningBalance = startBalance;
+        const todayMonth = this.getLisbonDate('month');
 
         const monthlyTxs = transactions.filter(t =>
             !t.isIgnored && this.isTransactionInMonth(t, targetMonth)
@@ -212,8 +213,29 @@ export class FinancialEngine {
 
         // Calcular saldo corrido
         allEvents.forEach(evt => {
+            let shouldAffectBalance = true;
+            const original = transactions.find(t => t.id === evt.originalId);
+
+            if (original) {
+                // Filtro de inclusão
+                if (original.accountId) {
+                    const acc = accounts.find(a => a.id === original.accountId);
+                    if (acc && !acc.includeInTotal) shouldAffectBalance = false;
+                }
+
+                // Mesma lógica de calculateProjectedInitialBalance:
+                // No mês atual, confirmados em conta já estão no startBalance
+                if (targetMonth === todayMonth && shouldAffectBalance) {
+                    if (evt.status === 'confirmed' && !original.creditCardId) {
+                        shouldAffectBalance = false;
+                    }
+                }
+            }
+
             const modifier = evt.type === 'income' ? 1 : (evt.type === 'expense' ? -1 : 0);
-            runningBalance += (evt.value * modifier);
+            if (shouldAffectBalance) {
+                runningBalance += (evt.value * modifier);
+            }
             events.push({ ...evt, resultingBalance: runningBalance });
         });
 
@@ -357,6 +379,12 @@ export class FinancialEngine {
 
     /**
      * Calcula o saldo inicial projetado para um mês específico.
+     *
+     * Lógica correcta:
+     * - A Liquidez Real (saldos das contas) já reflecte TODAS as transações confirmadas.
+     * - Para o Saldo Projetado do mês actual, partimos da Liquidez Real
+     *   e adicionamos apenas as transações PENDENTES (forecast) do mês.
+     * - Para meses futuros, propagamos mês a mês somando TODAS as transações.
      */
     static calculateProjectedInitialBalance(
         transactions: Transaction[],
@@ -366,42 +394,44 @@ export class FinancialEngine {
         const currentRealLiquidity = this.calculateRealLiquidity(accounts);
         const todayMonth = this.getLisbonDate('month');
 
-        // 1. Calcular o saldo no início do mês ATUAL
-        // Precisamos desfazer transações confirmadas deste mês para ter um ponto de partida estável.
-        // IMPORTANTE: usamos isTransactionInMonth (não startsWith) para capturar também
-        // transações fixas/recorrentes cujo t.date aponta para o mês de criação original.
-        let balanceStartOfCurrentMonth = currentRealLiquidity;
-        transactions.forEach(t => {
-            if (t.isIgnored) return;
-            // Desfazemos apenas transações confirmadas que estão ATIVAS no mês atual
-            if (t.status === 'confirmed' && this.isTransactionInMonth(t, todayMonth)) {
-                const val = Number(t.value) || 0;
-                balanceStartOfCurrentMonth += (t.type === 'expense' ? val : (t.type === 'income' ? -val : 0));
-            }
-        });
-
-        // Se o alvo for o mês atual ou passado, retornamos o início do mês atual
-        // (Isso garante que Initial + Incomes - Expenses = End balance do mês)
-        if (targetMonth <= todayMonth) {
-            return balanceStartOfCurrentMonth;
+        if (targetMonth === todayMonth) {
+            return currentRealLiquidity;
         }
 
-        // 2. Propagar do início do mês atual até o início do targetMonth
-        // Somando TODAS as transações (confirmadas e previstas) dos meses intermediários
-        let runningBalance = balanceStartOfCurrentMonth;
+        if (targetMonth < todayMonth) {
+            return currentRealLiquidity;
+        }
+
+        // Para meses futuros: partir da liquidez real de hoje e propagar
+        let runningBalance = currentRealLiquidity;
         let iterMonth = todayMonth;
         let safety = 0;
 
         while (iterMonth < targetMonth && safety < 120) {
             safety++;
             const monthTxs = transactions.filter(t => !t.isIgnored && this.isTransactionInMonth(t, iterMonth));
+
             monthTxs.forEach(t => {
+                // IGNORAR se a conta não estiver no total
+                if (t.accountId) {
+                    const acc = accounts.find(a => a.id === t.accountId);
+                    if (acc && !acc.includeInTotal) return;
+                }
+
+                const effectiveStatus = this.getEffectiveTransactionStatus(t, iterMonth);
+
+                // No mês actual, só somamos o que ainda não afectou o saldo real (currentRealLiquidity)
+                if (iterMonth === todayMonth) {
+                    // Confirmados em conta já estão no saldo das contas.
+                    // Confirmados em cartão OU pendentes (forecast) ainda não.
+                    if (effectiveStatus === 'confirmed' && !t.creditCardId) return;
+                }
+
                 const val = Number(t.value) || 0;
                 const modifier = (t.type === 'income' ? 1 : (t.type === 'expense' ? -1 : 0));
                 runningBalance += (val * modifier);
             });
 
-            // Avançar mês: YYYY-MM
             let [y, m] = iterMonth.split('-').map(Number);
             m++;
             if (m > 12) { m = 1; y++; }

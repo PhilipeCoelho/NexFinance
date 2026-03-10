@@ -553,23 +553,76 @@ if (typeof window !== 'undefined') {
     // --- AUTO SYNC LOGIC ---
     let syncTimeout: any = null;
 
+    /**
+     * Conta o total de itens de dados relevantes num estado.
+     * Usado para determinar qual estado tem mais dados reais.
+     */
+    const countDataItems = (state: any): number => {
+        const p = state?.personalData;
+        const b = state?.businessData;
+        if (!p && !b) return 0;
+        return (
+            (p?.transactions?.length || 0) +
+            (p?.accounts?.length || 0) +
+            (p?.creditCards?.length || 0) +
+            (b?.transactions?.length || 0) +
+            (b?.accounts?.length || 0) +
+            (b?.creditCards?.length || 0)
+        );
+    };
+
     supabase.auth.onAuthStateChange(async (event, session) => {
         if (session?.user) {
             console.log("SYNC: User identified, checking cloud state...");
-            const { data } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
+            const { data, error } = await supabase.from('user_sync').select('state').eq('user_id', session.user.id).single();
 
             const currentState = useFinanceStore.getState();
+
             if (data?.state) {
-                // Determine which state is newer
+                const cloudItems = countDataItems(data.state);
+                const localItems = countDataItems(currentState);
                 const cloudDate = new Date(data.state.lastUpdatedAt || 0);
                 const localDate = new Date(currentState.lastUpdatedAt || 0);
 
-                if (cloudDate > localDate || (currentState.personalData.transactions.length === 0 && data.state.personalData.transactions.length > 0)) {
-                    console.log("SYNC: Cloud is newer or local is empty. Restoring cloud state.");
-                    useFinanceStore.setState({ ...data.state, session, user: session.user, isHydrated: true });
+                // REGRA PRINCIPAL: A nuvem sempre vence se tiver mais dados OU se o local estiver vazio.
+                // Apenas mantém o local se ele tiver dados E for mais recente que a nuvem.
+                const cloudHasMoreData = cloudItems > localItems;
+                const localIsEmpty = localItems === 0;
+                const cloudIsNewer = cloudDate > localDate;
+
+                if (cloudHasMoreData || localIsEmpty || cloudIsNewer) {
+                    console.log(`SYNC: Restoring from cloud. Cloud items: ${cloudItems}, Local items: ${localItems}, Cloud newer: ${cloudIsNewer}`);
+                    useFinanceStore.setState({
+                        ...data.state,
+                        session,
+                        user: session.user,
+                        isAuthenticated: true,
+                        authLoading: false,
+                        isHydrated: true
+                    });
                 } else {
-                    console.log("SYNC: Local is newer or same as cloud. Keeping local.");
+                    console.log(`SYNC: Local has same/more recent data. Cloud: ${cloudItems} items, Local: ${localItems} items.`);
                     useFinanceStore.setState({ isHydrated: true });
+                    // Push local to cloud to keep it in sync
+                    if (localItems > 0) {
+                        const payload = {
+                            currentContext: currentState.currentContext,
+                            personalData: currentState.personalData,
+                            businessData: currentState.businessData,
+                            settings: currentState.settings,
+                            referenceMonth: currentState.referenceMonth,
+                            viewMonth: currentState.viewMonth,
+                            lastUpdatedAt: currentState.lastUpdatedAt
+                        };
+                        supabase.from('user_sync').upsert({
+                            user_id: session.user.id,
+                            state: payload,
+                            updated_at: new Date().toISOString()
+                        }).then(({ error }) => {
+                            if (error) console.error("SYNC: Failed to push local to cloud", error);
+                            else console.log("SYNC: Local pushed to cloud.");
+                        });
+                    }
                 }
             } else {
                 console.log("SYNC: No cloud data found. Starting fresh or with local data.");

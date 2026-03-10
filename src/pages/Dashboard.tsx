@@ -24,6 +24,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
 import { format, parseISO, startOfDay, subMonths, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { pt } from 'date-fns/locale';
 import { FinancialEngine } from '@/lib/FinancialEngine';
 import PageLayout from '@/components/PageLayout';
 import FinancialIntelligence from '@/components/FinancialIntelligence';
@@ -158,8 +159,43 @@ const Dashboard: React.FC = () => {
   }, [monthlyTransactions]);
 
   const netBalance = useMemo(() => monthlyIncomeTotal - expenseTotal, [monthlyIncomeTotal, expenseTotal]);
-  // projectedEndBalance = início do mês + todas as trans do mês = expectativa de fim de mês (igual ao FinancialFlow)
-  const projectedEndBalance = useMemo(() => contextualLiquidity + netBalance, [contextualLiquidity, netBalance]);
+
+  // Saldo Projetado = Liquidez Real + transações PENDENTES do mês
+  // (as confirmadas já estão reflectidas na Liquidez Real via saldos das contas)
+  const pendingNetBalance = useMemo(() => {
+    if (!data?.accounts) return 0;
+
+    const pending = monthlyTransactions.filter(t => {
+      if (t.isIgnored) return false;
+
+      // Importante: Considerar apenas transações de contas incluídas no total
+      if (t.accountId) {
+        const acc = data.accounts.find(a => a.id === t.accountId);
+        if (acc && !acc.includeInTotal) return false;
+      }
+
+      const status = FinancialEngine.getEffectiveTransactionStatus(t, referenceMonth);
+      const isCurrentMonth = referenceMonth === format(new Date(), 'yyyy-MM');
+
+      if (isCurrentMonth) {
+        // Se for mês atual, o ponto de partida é o saldo real hoje.
+        // O saldo real HOJE já reflete as confirmadas em conta.
+        // Mas não reflete: as previstas (forecast) e as confirmadas em CARTÃO.
+        return status === 'forecast' || !!t.creditCardId;
+      }
+
+      // Para meses futuros, o contextualLiquidity leva até o início do mês,
+      // então tudo o que acontece no próprio mês futuro é considerado "pendente" em relação ao início.
+      return true;
+    });
+
+    const pendingIncome = pending.filter(t => t.type === 'income').reduce((s, t) => s + (Number(t.value) || 0), 0);
+    const pendingExpense = pending.filter(t => t.type === 'expense').reduce((s, t) => s + (Number(t.value) || 0), 0);
+    return pendingIncome - pendingExpense;
+  }, [monthlyTransactions, referenceMonth, data?.accounts]);
+
+  // projectedEndBalance = Liquidez Real de hoje + ainda falta receber/pagar (pendentes)
+  const projectedEndBalance = useMemo(() => contextualLiquidity + pendingNetBalance, [contextualLiquidity, pendingNetBalance]);
 
   const displayUpcoming = useMemo(() => {
     const today = startOfDay(new Date());
@@ -364,11 +400,15 @@ const Dashboard: React.FC = () => {
         <div className="sys-grid-4-cols">
           <div className="sys-card kpi-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <div className="kpi-label">LIQUIDEZ ATUAL</div>
+              <div className="kpi-label">LIQUIDEZ {referenceMonth === format(new Date(), 'yyyy-MM') ? 'ATUAL' : 'PROJETADA'}</div>
               <div className="kpi-icon-container blue"><Wallet size={16} /></div>
             </div>
-            <div className="kpi-value">{formatCurrency(currentRealLiquidity)}</div>
-            <div className="kpi-footer">Saldo real em contas hoje</div>
+            <div className="kpi-value">{formatCurrency(contextualLiquidity)}</div>
+            <div className="kpi-footer">
+              {referenceMonth === format(new Date(), 'yyyy-MM')
+                ? 'Saldo real em contas hoje'
+                : `Saldo inicial para ${format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: pt })}`}
+            </div>
           </div>
           <div className="sys-card kpi-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
