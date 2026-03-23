@@ -150,8 +150,13 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
     } else if (recurrenceMode === 'installments') {
       setValue('isFixed', false);
       setValue('isRecurring', true);
+      // Se for parcelada, a 1ª parcela (hoje/data da compra) deve ser marcada como PAGA por padrão (regra de negócio)
+      if (!editingTransaction) {
+        setValue('status', 'confirmed');
+        setIsStatusManuallyChanged(true); // Marca como manual para não ser sobrescrito pelo watcher de data
+      }
     }
-  }, [recurrenceMode, setValue]);
+  }, [recurrenceMode, setValue, editingTransaction]);
 
   // Automação de Status baseada na Data
   const watchedDate = watch('date');

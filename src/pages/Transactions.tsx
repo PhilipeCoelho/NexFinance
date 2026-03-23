@@ -250,8 +250,8 @@ const Transactions: React.FC = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '13px', color: '#64748b' }}>{t.description}</span>
                           {t.isRecurring && t.recurrence?.installmentsCount && (
-                            <span style={{ fontSize: '10px', color: 'var(--sys-blue)', backgroundColor: 'var(--sys-bg-blue)', padding: '2px 6px', borderRadius: '4px', fontWeight: 800 }}>
-                              {FinancialEngine.getInstallmentText(t, referenceMonth)}
+                            <span style={{ fontSize: '10px', color: isConfirmed ? 'var(--sys-green)' : 'var(--sys-blue)', backgroundColor: isConfirmed ? 'var(--sys-bg-green)' : 'var(--sys-bg-blue)', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>
+                                {FinancialEngine.getInstallmentText(t, referenceMonth)} {isConfirmed ? (t.type === 'income' ? 'RECEBIDA' : 'PAGA') : 'PENDENTE'}
                             </span>
                           )}
                         </div>

@@ -629,7 +629,7 @@ const Dashboard: React.FC = () => {
       <style>{`
         .kpi-card { padding: var(--v-card-padding); min-height: 100px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: all 0.3s ease; }
         .kpi-card.clickable { cursor: pointer; }
-        .kpi-card.clickable:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); border-color: var(--sys-primary); }
+        .kpi-card.clickable:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
         .kpi-card.critical { border-color: var(--sys-red) !important; background-color: rgba(239, 68, 68, 0.05); }
         .kpi-label { font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.05em; }
         .kpi-value { font-size: var(--v-kpi-val-s); font-weight: 900; letter-spacing: -0.02em; margin: 4px 0; }
