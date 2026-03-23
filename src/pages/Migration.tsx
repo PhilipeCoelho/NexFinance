@@ -223,9 +223,9 @@ const Migration: React.FC = () => {
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--sys-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>Estado Actual</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                     {[
-                        { label: 'Transações Pessoais', value: personalData.transactions.length },
-                        { label: 'Contas Pessoais', value: personalData.accounts.length },
-                        { label: 'Transações Empresa', value: businessData.transactions.length },
+                        { label: 'Transações Empresa', value: personalData.transactions.length },
+                        { label: 'Contas Empresa', value: personalData.accounts.length },
+                        { label: 'Transações Pessoais', value: businessData.transactions.length },
                     ].map(item => (
                         <div key={item.label} style={{ padding: '10px 14px', background: 'var(--bg-tertiary)', borderRadius: 10 }}>
                             <div style={{ fontSize: 10, color: 'var(--sys-text-secondary)', fontWeight: 600, marginBottom: 4 }}>{item.label}</div>

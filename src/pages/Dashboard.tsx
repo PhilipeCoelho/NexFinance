@@ -275,62 +275,71 @@ const Dashboard: React.FC = () => {
   }, [monthlyTransactions, data.categories]);
 
   // --- RENDERING HELPERS ---
-  const isSummaryVisible = settings.dashboardWidgets?.find(w => w.id === 'summary_balance')?.visible !== false;
+  const isSummaryBalanceVisible = settings.dashboardWidgets?.find(w => w.id === 'summary_balance')?.visible !== false;
+  const isSummaryAlertsVisible = settings.dashboardWidgets?.find(w => w.id === 'summary_alerts')?.visible !== false;
 
-  const summaryPanel = (
-    <div className={`sys-summary-container ${!isSummaryVisible ? 'widget-hidden' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div className="sys-summary-widget-header">Balanço do Mês</div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Entradas</div>
-          <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--sys-green)' }}>{formatCurrency(monthlyIncomeTotal)}</div>
-        </div>
-        <div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Saídas</div>
-          <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--sys-red)' }}>{formatCurrency(expenseTotal)}</div>
-        </div>
-        <div style={{ padding: '12px 0', borderTop: '1px solid var(--border-primary)', marginTop: '8px' }}>
-          <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Resultado Líquido</div>
-          <div style={{ fontSize: '16px', fontWeight: 900, color: netBalance >= 0 ? 'var(--sys-green)' : 'var(--sys-red)' }}>
-            {formatCurrency(netBalance)}
+  const shouldRenderSidebar = isSummaryBalanceVisible || isSummaryAlertsVisible || isCustomizing;
+
+  const summaryPanel = shouldRenderSidebar ? (
+    <div className="sys-summary-container" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <WidgetWrapper id="summary_balance" label="Balanço do Mês (Lateral)" settings={settings} isCustomizing={isCustomizing} toggleWidget={toggleWidget}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="sys-summary-widget-header">Balanço do Mês</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Entradas</div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--sys-green)' }}>{formatCurrency(monthlyIncomeTotal)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Saídas</div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--sys-red)' }}>{formatCurrency(expenseTotal)}</div>
+            </div>
+            <div style={{ padding: '12px 0', borderTop: '1px solid var(--border-primary)', marginTop: '8px' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Resultado Líquido</div>
+              <div style={{ fontSize: '16px', fontWeight: 900, color: netBalance >= 0 ? 'var(--sys-green)' : 'var(--sys-red)' }}>
+                {formatCurrency(netBalance)}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </WidgetWrapper>
 
-      <div style={{ marginTop: '24px' }}>
-        <div className="sys-summary-widget-header" style={{ marginBottom: '16px' }}>Alertas Rápidos</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {hasNegativeProjection && (
-            <div className="sys-card" style={{ padding: '10px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderLeft: '3px solid var(--sys-red)', display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <AlertCircle size={14} color="var(--sys-red)" />
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--sys-red)' }}>Risco de Saldo</div>
-                <div style={{ fontSize: '9px', color: '#64748b' }}>Projeção negativa detectada</div>
+      <WidgetWrapper id="summary_alerts" label="Alertas Rápidos (Lateral)" settings={settings} isCustomizing={isCustomizing} toggleWidget={toggleWidget}>
+        <div>
+          <div className="sys-summary-widget-header" style={{ marginBottom: '16px' }}>Alertas Rápidos</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {hasNegativeProjection && (
+              <div className="sys-card" style={{ padding: '10px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderLeft: '3px solid var(--sys-red)', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <AlertCircle size={14} color="var(--sys-red)" />
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--sys-red)' }}>Risco de Saldo</div>
+                  <div style={{ fontSize: '9px', color: '#64748b' }}>Projeção negativa detectada</div>
+                </div>
               </div>
-            </div>
-          )}
-          {pendingExpenses.count > 0 && (
-            <div className="sys-card" style={{ padding: '10px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderLeft: '3px solid var(--sys-red)', display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <ArrowDown size={14} color="var(--sys-red)" />
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: 700 }}>{formatCurrency(pendingExpenses.value)}</div>
-                <div style={{ fontSize: '9px', color: '#64748b' }}>{pendingExpenses.count} despesas abertas</div>
+            )}
+            {pendingExpenses.count > 0 && (
+              <div className="sys-card" style={{ padding: '10px', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderLeft: '3px solid var(--sys-red)', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <ArrowDown size={14} color="var(--sys-red)" />
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700 }}>{formatCurrency(pendingExpenses.value)}</div>
+                  <div style={{ fontSize: '9px', color: '#64748b' }}>{pendingExpenses.count} despesas abertas</div>
+                </div>
               </div>
-            </div>
-          )}
-          {(!hasNegativeProjection && pendingExpenses.count === 0) && (
-            <div className="sys-card" style={{ padding: '10px', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderLeft: '3px solid var(--sys-green)', display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <CheckCircle2 size={14} color="var(--sys-green)" />
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--sys-green)' }}>Tudo em dia!</div>
-                <div style={{ fontSize: '9px', color: '#64748b' }}>Nenhum alerta crítico</div>
+            )}
+            {(!hasNegativeProjection && pendingExpenses.count === 0) && (
+              <div className="sys-card" style={{ padding: '10px', backgroundColor: 'rgba(16, 185, 129, 0.05)', borderLeft: '3px solid var(--sys-green)', display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <CheckCircle2 size={14} color="var(--sys-green)" />
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--sys-green)' }}>Tudo em dia!</div>
+                  <div style={{ fontSize: '9px', color: '#64748b' }}>Nenhum alerta crítico</div>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
+      </WidgetWrapper>
     </div>
-  );
+  ) : null;
 
   const dashboardActions = (
     <button

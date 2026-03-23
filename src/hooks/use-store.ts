@@ -85,6 +85,7 @@ const DEFAULT_WIDGETS: DashboardWidget[] = [
     { id: 'chart_flow', label: 'Fluxo Financeiro do Mês', visible: true },
     { id: 'chart_categories', label: 'Distribuição por Categoria', visible: true },
     { id: 'summary_balance', label: 'Balanço do Mês (Lateral)', visible: true },
+    { id: 'summary_alerts', label: 'Alertas Rápidos (Lateral)', visible: true },
     { id: 'intelligence', label: 'Inteligência NexFinance', visible: true },
     { id: 'recurring', label: 'Compromissos Recorrentes', visible: true },
     { id: 'predictions', label: 'Previsão de Saldo Futuro', visible: true },
@@ -358,7 +359,19 @@ export const useFinanceStore = create<FinanceState>()(
 
             updateAccount: (id, updated) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
-                const accounts = state[key].accounts.map(a => a.id === id ? { ...a, ...updated } : a);
+                const accounts = state[key].accounts.map(a => {
+                    if (a.id === id) {
+                        const newFields = { ...a, ...updated };
+                        // Se o saldo atual foi alterado manualmente, precisamos ajustar o saldo inicial
+                        // para que o recálculo (initial + transações) resulte no novo saldo desejado.
+                        if (updated.currentBalance !== undefined && updated.currentBalance !== a.currentBalance) {
+                            const currentImpact = a.currentBalance - a.initialBalance;
+                            newFields.initialBalance = updated.currentBalance - currentImpact;
+                        }
+                        return newFields;
+                    }
+                    return a;
+                });
                 return { [key]: { ...state[key], accounts }, lastUpdatedAt: new Date().toISOString() };
             }),
 
