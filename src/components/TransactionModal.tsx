@@ -66,6 +66,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
   const [pendingSubmitData, setPendingSubmitData] = useState<{ payload: any, stayOpen: boolean } | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [recurrenceMode, setRecurrenceMode] = useState<'single' | 'fixed' | 'installments'>('single');
+  const [isStatusManuallyChanged, setIsStatusManuallyChanged] = useState(false);
   const [displayValue, setDisplayValue] = useState("0,00");
 
   const initialValues = useMemo(() => {
@@ -82,10 +83,11 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
       console.error("MODAL: Error parsing editing date", err);
     }
 
+    const todayStr = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().split('T')[0];
     return {
       type: forcedType || 'expense',
-      date: new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().split('T')[0],
-      status: 'forecast',
+      date: todayStr,
+      status: 'confirmed', // Hoje por padrão é considerado pago/confirmado
       value: 0,
       description: '',
       accountId: defaultAccountId || data?.accounts?.[0]?.id || '',
@@ -116,6 +118,7 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
     if (isOpen) {
       reset(initialValues);
       setShowDetails(false);
+      setIsStatusManuallyChanged(false);
       setRecurrenceMode(editingTransaction?.isFixed ? 'fixed' : editingTransaction?.isRecurring ? 'installments' : 'single');
 
       if (editingTransaction) {
@@ -149,6 +152,20 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
       setValue('isRecurring', true);
     }
   }, [recurrenceMode, setValue]);
+
+  // Automação de Status baseada na Data
+  const watchedDate = watch('date');
+  useEffect(() => {
+    // Apenas automatiza se não foi alterado manualmente pelo usuário neste "open" do modal
+    if (!isStatusManuallyChanged && watchedDate) {
+      const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' })).toISOString().split('T')[0];
+      if (watchedDate <= today) {
+        setValue('status', 'confirmed');
+      } else {
+        setValue('status', 'forecast');
+      }
+    }
+  }, [watchedDate, isStatusManuallyChanged, setValue]);
 
   const isIgnored = watch('isIgnored');
 
@@ -373,7 +390,10 @@ const TransactionModal: React.FC<TransactionModalProps> = ({ isOpen, onClose, fo
                 <button
                   type="button"
                   className={`mobills-toggle ${status === 'confirmed' ? 'active' : ''}`}
-                  onClick={() => setValue('status', status === 'confirmed' ? 'forecast' : 'confirmed')}
+                  onClick={() => {
+                    setValue('status', status === 'confirmed' ? 'forecast' : 'confirmed');
+                    setIsStatusManuallyChanged(true);
+                  }}
                 >
                   <div className="toggle-dot"></div>
                 </button>
