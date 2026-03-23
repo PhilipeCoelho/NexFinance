@@ -407,7 +407,7 @@ const Dashboard: React.FC = () => {
 
         {/* INDICATORS (Fixed at top) */}
         <div className="sys-grid-4-cols">
-          <div className="sys-card kpi-card">
+          <div className="sys-card kpi-card clickable" onClick={() => navigate('/transactions')}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div className="kpi-label">LIQUIDEZ {referenceMonth === format(new Date(), 'yyyy-MM') ? 'ATUAL' : 'PROJETADA'}</div>
               <div className="kpi-icon-container blue"><Wallet size={16} /></div>
@@ -419,7 +419,7 @@ const Dashboard: React.FC = () => {
                 : `Saldo inicial para ${format(parseISO(referenceMonth + '-01'), 'MMMM', { locale: pt })}`}
             </div>
           </div>
-          <div className="sys-card kpi-card">
+          <div className="sys-card kpi-card clickable" onClick={() => navigate('/income')}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div className="kpi-label">ENTRADAS DO MÊS</div>
               <div className="kpi-icon-container green"><ArrowUp size={16} /></div>
@@ -427,7 +427,7 @@ const Dashboard: React.FC = () => {
             <div className="kpi-value" style={{ color: 'var(--sys-green)' }}>{formatCurrency(monthlyIncomeTotal)}</div>
             <div className="kpi-footer">Recebido até o momento</div>
           </div>
-          <div className="sys-card kpi-card">
+          <div className="sys-card kpi-card clickable" onClick={() => navigate('/expenses')}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div className="kpi-label">SAÍDAS DO MÊS</div>
               <div className="kpi-icon-container red"><ArrowDown size={16} /></div>
@@ -435,7 +435,7 @@ const Dashboard: React.FC = () => {
             <div className="kpi-value" style={{ color: 'var(--sys-red)' }}>{formatCurrency(expenseTotal)}</div>
             <div className="kpi-footer">Gastos totais no mês</div>
           </div>
-          <div className="sys-card kpi-card">
+          <div className={`sys-card kpi-card clickable ${projectedEndBalance < 0 ? 'critical' : ''}`} onClick={() => navigate('/financial-flow')}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
               <div className="kpi-label">SALDO PROJETADO</div>
               <div className="kpi-icon-container warning"><Calendar size={16} /></div>
@@ -627,7 +627,10 @@ const Dashboard: React.FC = () => {
       </div>
 
       <style>{`
-        .kpi-card { padding: var(--v-card-padding); min-height: 100px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; }
+        .kpi-card { padding: var(--v-card-padding); min-height: 100px; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden; transition: all 0.3s ease; }
+        .kpi-card.clickable { cursor: pointer; }
+        .kpi-card.clickable:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); border-color: var(--sys-primary); }
+        .kpi-card.critical { border-color: var(--sys-red) !important; background-color: rgba(239, 68, 68, 0.05); }
         .kpi-label { font-size: 10px; font-weight: 800; color: #64748b; letter-spacing: 0.05em; }
         .kpi-value { font-size: var(--v-kpi-val-s); font-weight: 900; letter-spacing: -0.02em; margin: 4px 0; }
         .kpi-footer { font-size: 11px; color: #94a3b8; }
