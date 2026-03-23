@@ -27,6 +27,7 @@ import { format, parseISO, startOfDay, subMonths, eachDayOfInterval, startOfMont
 import { pt } from 'date-fns/locale';
 import { FinancialEngine } from '@/lib/FinancialEngine';
 import PageLayout from '@/components/PageLayout';
+import PeriodController from '@/components/PeriodController';
 import FinancialIntelligence from '@/components/FinancialIntelligence';
 import {
   Chart as ChartJS,
@@ -362,6 +363,7 @@ const Dashboard: React.FC = () => {
       title="Visão Geral"
       summaryPanel={summaryPanel}
       actions={dashboardActions}
+      hideMonthSelector={true}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
@@ -404,6 +406,12 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* PERIOD CONTROLLER */}
+        <PeriodController 
+          incomeTotal={monthlyIncomeTotal} 
+          expenseTotal={expenseTotal} 
+        />
 
         {/* INDICATORS (Fixed at top) */}
         <div className="sys-grid-4-cols">

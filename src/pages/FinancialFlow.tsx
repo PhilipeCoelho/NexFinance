@@ -40,10 +40,21 @@ ChartJS.register(
     Filler
 );
 
+import PeriodController from '@/components/PeriodController';
+
 const FinancialFlow: React.FC = () => {
     const data = useCurrentData();
     const { settings, referenceMonth } = useFinanceStore();
     const [viewMode, setViewMode] = React.useState<'month' | 'full'>('month');
+
+    // Calculate totals for PeriodController
+    const { incomeTotal, expenseTotal } = useMemo(() => {
+        if (!data) return { incomeTotal: 0, expenseTotal: 0 };
+        const monthEvents = data.transactions.filter(t => FinancialEngine.isTransactionInMonth(t, referenceMonth));
+        const inTotal = monthEvents.filter(t => t.type === 'income' && !t.isIgnored).reduce((s, t) => s + (Number(t.value) || 0), 0);
+        const exTotal = monthEvents.filter(t => t.type === 'expense' && !t.isIgnored).reduce((s, t) => s + (Number(t.value) || 0), 0);
+        return { incomeTotal: inTotal, expenseTotal: exTotal };
+    }, [data, referenceMonth]);
 
     // Helper robusto para evitar o RangeError em datas malformadas
     const safeParse = (dateStr: string) => {
@@ -91,8 +102,14 @@ const FinancialFlow: React.FC = () => {
     const monthLabel = format(parseISO(referenceMonth + '-01'), 'MMMM yyyy', { locale: ptBR });
 
     return (
-        <PageLayout title="Fluxo Financeiro Contínuo">
+        <PageLayout title="Fluxo Financeiro Contínuo" hideMonthSelector={true}>
             <div className="flow-container">
+                {/* PERIOD CONTROLLER */}
+                <PeriodController 
+                    incomeTotal={incomeTotal} 
+                    expenseTotal={expenseTotal} 
+                />
+
                 {/* Mode Selector Toggle */}
                 <div className="flow-mode-toggle sys-card">
                     <button

@@ -1,0 +1,31 @@
+{
+  "state": {
+    "currentContext": "personal",
+    "personalData": {
+      "transactions": [
+        {
+          "type": "income",
+          "description": "Salario Jeiza 6000 Manual",
+          "date": "2026-03-01",
+          "id": "eigkqmdvg",
+          "value": 0
+        },
+        {
+          "type": "income",
+          "description": "Salario Jeiza",
+          "date": "2026-03-01",
+          "id": "ke9urap6g",
+          "value": 0
+        }
+      ],
+      "accounts": [
+        {
+          "name": "ActivoBank",
+          "institution": "ActivoBank",
+          "type": "checking",
+          "id": "3g2q6urvc"
+        }
+      ]
+    }
+  }
+}

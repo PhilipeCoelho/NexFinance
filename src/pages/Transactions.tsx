@@ -15,6 +15,7 @@ import {
   Activity
 } from 'lucide-react';
 import DeleteTransactionModal from '@/components/DeleteTransactionModal';
+import PeriodController from '@/components/PeriodController';
 import { useFinanceStore, useCurrentData, getVisibleTransactions } from '@/hooks/use-store';
 import { Transaction } from '@/types/finance';
 import { format, parseISO } from 'date-fns';
@@ -137,6 +138,15 @@ const Transactions: React.FC = () => {
     return { income, expenses, balance };
   }, [visibleTransactions, referenceMonth]);
 
+  // Calculate totals for PeriodController (including forecasting)
+  const { incomeTotal, expenseTotal } = useMemo(() => {
+    if (!data) return { incomeTotal: 0, expenseTotal: 0 };
+    const monthTransactions = data.transactions.filter(t => FinancialEngine.isTransactionInMonth(t, referenceMonth));
+    const inTotal = monthTransactions.filter(t => t.type === 'income' && !t.isIgnored).reduce((s, t) => s + (Number(t.value) || 0), 0);
+    const exTotal = monthTransactions.filter(t => t.type === 'expense' && !t.isIgnored).reduce((s, t) => s + (Number(t.value) || 0), 0);
+    return { incomeTotal: inTotal, expenseTotal: exTotal };
+  }, [data, referenceMonth]);
+
   if (!data) return null;
 
   const summaryPanel = (
@@ -166,7 +176,11 @@ const Transactions: React.FC = () => {
   );
 
   return (
-    <PageLayout title="Movimentação" actions={headerActions} summaryPanel={summaryPanel}>
+    <PageLayout title="Movimentação" actions={headerActions} summaryPanel={summaryPanel} hideMonthSelector={true}>
+      <PeriodController 
+        incomeTotal={incomeTotal} 
+        expenseTotal={expenseTotal} 
+      />
       <div className="sys-card" style={{ padding: '20px' }}>
         <div className="sys-filters-row">
           <div className="sys-quick-filters">

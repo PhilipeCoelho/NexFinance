@@ -26,6 +26,8 @@ import BudgetModal from '@/components/BudgetModal';
 import GoalModal from '@/components/GoalModal';
 import FinancialIntelligence from '@/components/FinancialIntelligence';
 
+import PeriodController from '@/components/PeriodController';
+
 const Planning: React.FC = () => {
     const data = useCurrentData();
     const { settings, referenceMonth, deleteBudget, deleteGoal } = useFinanceStore();
@@ -34,6 +36,15 @@ const Planning: React.FC = () => {
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
     const [editingBudget, setEditingBudget] = useState<any>(null);
     const [editingGoal, setEditingGoal] = useState<any>(null);
+
+    // Calculate totals for PeriodController
+    const { incomeTotal, expenseTotal } = useMemo(() => {
+        if (!data) return { incomeTotal: 0, expenseTotal: 0 };
+        const monthTransactions = data.transactions.filter(t => FinancialEngine.isTransactionInMonth(t, referenceMonth));
+        const inTotal = monthTransactions.filter(t => t.type === 'income' && !t.isIgnored).reduce((s, t) => s + (Number(t.value) || 0), 0);
+        const exTotal = monthTransactions.filter(t => t.type === 'expense' && !t.isIgnored).reduce((s, t) => s + (Number(t.value) || 0), 0);
+        return { incomeTotal: inTotal, expenseTotal: exTotal };
+    }, [data, referenceMonth]);
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: settings.currency || 'EUR' }).format(value);
@@ -96,7 +107,12 @@ const Planning: React.FC = () => {
     );
 
     return (
-        <PageLayout title="Inteligência de Planejamento" actions={headerActions} summaryPanel={summaryPanel}>
+        <PageLayout title="Inteligência de Planejamento" actions={headerActions} summaryPanel={summaryPanel} hideMonthSelector={true}>
+            {/* PERIOD CONTROLLER */}
+            <PeriodController 
+                incomeTotal={incomeTotal} 
+                expenseTotal={expenseTotal} 
+            />
 
             {/* Inteligência Financeira Automática */}
             <div style={{ marginBottom: '40px' }}>

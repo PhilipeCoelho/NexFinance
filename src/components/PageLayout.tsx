@@ -9,9 +9,10 @@ interface PageLayoutProps {
     children: React.ReactNode;
     summaryPanel?: React.ReactNode;
     actions?: React.ReactNode;
+    hideMonthSelector?: boolean;
 }
 
-const PageLayout: React.FC<PageLayoutProps> = ({ title, children, summaryPanel, actions }) => {
+const PageLayout: React.FC<PageLayoutProps> = ({ title, children, summaryPanel, actions, hideMonthSelector }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const navigate = useNavigate();
@@ -46,7 +47,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ title, children, summaryPanel, 
                     {actions}
                 </div>
                 <div className="sys-header-right">
-                    <MonthSelector />
+                    {!hideMonthSelector && <MonthSelector />}
                     <button className="sys-btn-primary" onClick={() => setIsModalOpen(true)}>
                         <Plus size={16} strokeWidth={3} /> Nova Transação
                     </button>

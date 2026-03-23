@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
 import DeleteTransactionModal from '@/components/DeleteTransactionModal';
+import PeriodController from '@/components/PeriodController';
 import PageLayout from '@/components/PageLayout';
 import { FinancialEngine } from '@/lib/FinancialEngine';
 
@@ -135,6 +136,15 @@ const Expenses: React.FC = () => {
         return { pending, paid, total: pending + paid };
     }, [visibleExpenses, referenceMonth]);
 
+    // Calculate totals for PeriodController
+    const { incomeTotal, expenseTotal } = useMemo(() => {
+        if (!data) return { incomeTotal: 0, expenseTotal: 0 };
+        const monthTransactions = data.transactions.filter(t => FinancialEngine.isTransactionInMonth(t, referenceMonth));
+        const inTotal = monthTransactions.filter(t => t.type === 'income' && !t.isIgnored).reduce((s, t) => s + (Number(t.value) || 0), 0);
+        const exTotal = monthTransactions.filter(t => t.type === 'expense' && !t.isIgnored).reduce((s, t) => s + (Number(t.value) || 0), 0);
+        return { incomeTotal: inTotal, expenseTotal: exTotal };
+    }, [data, referenceMonth]);
+
     if (!data) return null;
 
     const paidPercentage = stats.total > 0 ? (stats.paid / stats.total) * 100 : 0;
@@ -167,7 +177,11 @@ const Expenses: React.FC = () => {
     );
 
     return (
-        <PageLayout title="Despesas" actions={headerActions} summaryPanel={summaryPanel}>
+        <PageLayout title="Despesas" actions={headerActions} summaryPanel={summaryPanel} hideMonthSelector={true}>
+            <PeriodController 
+                incomeTotal={incomeTotal} 
+                expenseTotal={expenseTotal} 
+            />
             <div className="sys-card" style={{ padding: '20px' }}>
                 <div className="sys-filters-row">
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
