@@ -103,22 +103,40 @@ const Transactions: React.FC = () => {
           if (!a.isIgnored && b.isIgnored) return -1;
         }
 
-        let valA: any = a[sortConfig.key as keyof typeof a];
-        let valB: any = b[sortConfig.key as keyof typeof b];
+        let valA: any;
+        let valB: any;
 
-        if (sortConfig.key === 'categoryId') {
+        if (sortConfig.key === 'status') {
+          const statusA = FinancialEngine.getEffectiveTransactionStatus(a, referenceMonth);
+          const statusB = FinancialEngine.getEffectiveTransactionStatus(b, referenceMonth);
+          // Pendente (forecast) vem primeiro (0), Pago (confirmed) vem depois (1)
+          valA = statusA === 'forecast' ? 0 : 1;
+          valB = statusB === 'forecast' ? 0 : 1;
+        } else if (sortConfig.key === 'categoryId') {
           valA = data.categories.find(c => c.id === a.categoryId)?.name || '';
           valB = data.categories.find(c => c.id === b.categoryId)?.name || '';
         } else if (sortConfig.key === 'accountId') {
           valA = data.accounts?.find(acc => acc.id === a.accountId)?.name || '';
           valB = data.accounts?.find(acc => acc.id === b.accountId)?.name || '';
         } else if (sortConfig.key === 'date') {
-          valA = new Date(valA).getTime();
-          valB = new Date(valB).getTime();
+          valA = new Date(a.date).getTime();
+          valB = new Date(b.date).getTime();
+        } else {
+          valA = a[sortConfig.key as keyof typeof a];
+          valB = b[sortConfig.key as keyof typeof b];
         }
 
+        // Ordenação principal
         if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+
+        // Ordenação secundária (Data crescente) se a principal for igual
+        if (sortConfig.key !== 'date') {
+          const dateA = new Date(a.date).getTime();
+          const dateB = new Date(b.date).getTime();
+          return dateA - dateB;
+        }
+
         return 0;
       });
     }
@@ -198,7 +216,7 @@ const Transactions: React.FC = () => {
           <table className="sys-table">
             <thead>
               <tr>
-                <th className="col-status">Status</th>
+                <th className="col-status" onClick={() => handleSort('status')} style={{ cursor: 'pointer' }}>Status</th>
                 <th className="col-date" onClick={() => handleSort('date')} style={{ cursor: 'pointer' }}>Data</th>
                 <th onClick={() => handleSort('description')} style={{ cursor: 'pointer' }}>Descrição</th>
                 <th onClick={() => handleSort('categoryId')} style={{ cursor: 'pointer' }}>Categoria</th>
