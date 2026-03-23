@@ -12,7 +12,6 @@ import {
     Repeat,
     Copy,
     Wallet,
-    Activity,
     ArrowUpCircle,
     TrendingUp
 } from 'lucide-react';
@@ -21,56 +20,51 @@ import { Transaction } from '@/types/finance';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import TransactionModal from '@/components/TransactionModal';
+import DeleteTransactionModal from '@/components/DeleteTransactionModal';
 import PageLayout from '@/components/PageLayout';
 import { FinancialEngine } from '@/lib/FinancialEngine';
 
 const Income: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [incomeToEdit, setIncomeToEdit] = useState<any>(null);
-    const [transactionToDelete, setTransactionToDelete] = useState<any>(null);
-    const [showDeletePrompt, setShowDeletePrompt] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+    const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [showIgnored, setShowIgnored] = useState(false);
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>({ key: 'date', direction: 'desc' });
 
     const data = useCurrentData();
-    const { settings, updateTransaction, deleteTransaction, referenceMonth, setReferenceMonth } = useFinanceStore();
+    const { settings, updateTransaction, deleteTransaction, referenceMonth } = useFinanceStore();
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: settings.currency || 'EUR' }).format(value);
     };
 
-    const handleEdit = (t: any) => {
-        setIncomeToEdit(t);
+    const handleEdit = (t: Transaction) => {
+        setEditingTransaction(t);
         setIsModalOpen(true);
     };
 
-    const handleDuplicate = (t: any) => {
+    const handleDuplicate = (t: Transaction) => {
         const { id, ...duplicateData } = t;
-        setIncomeToEdit({ ...duplicateData, description: `${t.description} (Cópia)` });
+        setEditingTransaction({ ...duplicateData, description: `${t.description} (Cópia)` } as Transaction);
         setIsModalOpen(true);
     };
 
-    const handleDeleteTrigger = (t: any) => {
-        if (t.isFixed || t.isRecurring) {
-            setTransactionToDelete(t);
-            setShowDeletePrompt(true);
-        } else {
-            if (confirm('Deseja excluir esta receita?')) {
-                deleteTransaction(t.id);
-            }
-        }
+    const handleDeleteClick = (t: Transaction) => {
+        setTransactionToDelete(t);
+        setIsDeleteModalOpen(true);
     };
 
-    const confirmDelete = (scope: 'all' | 'single') => {
+    const handleConfirmDelete = (scope: 'all' | 'single' | 'future') => {
         if (transactionToDelete) {
             deleteTransaction(transactionToDelete.id, scope, referenceMonth);
+            setTransactionToDelete(null);
         }
-        setShowDeletePrompt(false);
-        setTransactionToDelete(null);
+        setIsDeleteModalOpen(false);
     };
 
-    const { transactions: visibleIncome, hiddenCount, hiddenValue } = useMemo(() => {
+    const { transactions: visibleIncome } = useMemo(() => {
         if (!data?.transactions) return { transactions: [], hiddenCount: 0, hiddenValue: 0 };
         return getVisibleTransactions(data.transactions, {
             viewMonth: referenceMonth,
@@ -103,7 +97,6 @@ const Income: React.FC = () => {
                 if (sortConfig.key === 'status') {
                     const statusA = FinancialEngine.getEffectiveTransactionStatus(a, referenceMonth);
                     const statusB = FinancialEngine.getEffectiveTransactionStatus(b, referenceMonth);
-                    // Pendente (forecast) vem primeiro (0), Pago (confirmed) vem depois (1)
                     valA = statusA === 'forecast' ? 0 : 1;
                     valB = statusB === 'forecast' ? 0 : 1;
                 } else if (sortConfig.key === 'categoryId') {
@@ -120,11 +113,9 @@ const Income: React.FC = () => {
                     valB = b[sortConfig.key as keyof typeof b];
                 }
 
-                // Ordenação principal
                 if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
                 if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
 
-                // Ordenação secundária (Data crescente) se a principal for igual
                 if (sortConfig.key !== 'date') {
                     const dateA = new Date(a.date).getTime();
                     const dateB = new Date(b.date).getTime();
@@ -135,7 +126,7 @@ const Income: React.FC = () => {
             });
         }
         return sortableItems;
-    }, [visibleIncome, sortConfig, data]);
+    }, [visibleIncome, sortConfig, data, referenceMonth]);
 
     const stats = useMemo(() => {
         const activeIncome = visibleIncome.filter((t: Transaction) => !t.isIgnored);
@@ -277,7 +268,7 @@ const Income: React.FC = () => {
                                                 </button>
                                                 <button className="sys-action-btn" onClick={() => handleDuplicate(t)} title="Duplicar"><Copy size={16} /></button>
                                                 <button className="sys-action-btn" onClick={() => handleEdit(t)} title="Editar"><Edit3 size={16} /></button>
-                                                <button className="sys-action-btn delete" onClick={() => handleDeleteTrigger(t)} title="Excluir"><Trash2 size={16} /></button>
+                                                <button className="sys-action-btn delete" onClick={() => handleDeleteClick(t)} title="Excluir"><Trash2 size={16} /></button>
                                             </div>
                                         </td>
                                     </tr>
@@ -296,28 +287,18 @@ const Income: React.FC = () => {
 
             <TransactionModal
                 isOpen={isModalOpen}
-                onClose={() => { setIsModalOpen(false); setIncomeToEdit(null); }}
-                editingTransaction={incomeToEdit}
+                onClose={() => { setIsModalOpen(false); setEditingTransaction(null); }}
+                editingTransaction={editingTransaction || undefined}
                 forcedType="income"
-                activeMonth={referenceMonth}
             />
 
-            {showDeletePrompt && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-                    <div className="sys-card" style={{ width: 380, textAlign: 'center', padding: '32px' }}>
-                        <div style={{ width: '64px', height: '64px', borderRadius: '20px', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: 'var(--sys-red)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                            <Trash2 size={32} />
-                        </div>
-                        <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '8px' }}>Excluir receita repetida?</h3>
-                        <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '28px' }}>Esta receita faz parte de uma série recorrente. Como deseja excluí-la?</p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            <button className="sys-btn-secondary" style={{ justifyContent: 'center', width: '100%' }} onClick={() => confirmDelete('single')}>APENAS DESTE MÊS</button>
-                            <button className="sys-btn-destructive" style={{ justifyContent: 'center', width: '100%' }} onClick={() => confirmDelete('all')}>TODOS OS MESES</button>
-                            <button onClick={() => setShowDeletePrompt(false)} style={{ background: 'transparent', border: 'none', marginTop: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer', fontWeight: 600 }}>Cancelar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <DeleteTransactionModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                transaction={transactionToDelete}
+                referenceMonth={referenceMonth}
+            />
         </PageLayout>
     );
 };

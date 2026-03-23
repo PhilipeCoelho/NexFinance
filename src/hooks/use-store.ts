@@ -56,7 +56,7 @@ interface FinanceState {
     // Data Actions
     addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
     updateTransaction: (id: string, transaction: Partial<Transaction>, scope?: 'all' | 'single' | 'future', refMonth?: string) => void;
-    deleteTransaction: (id: string, scope?: 'all' | 'single', refMonth?: string) => void;
+    deleteTransaction: (id: string, scope?: 'all' | 'single' | 'future', refMonth?: string) => void;
     addAccount: (account: Omit<Account, 'id' | 'currentBalance' | 'predictedBalance'>) => void;
     updateAccount: (id: string, account: Partial<Account>) => void;
     deleteAccount: (id: string) => void;
@@ -330,11 +330,43 @@ export const useFinanceStore = create<FinanceState>()(
                 };
             }),
 
-            deleteTransaction: (id) => set((state) => {
+            deleteTransaction: (id, scope = 'all', refMonth) => set((state) => {
                 const key = state.currentContext === 'personal' ? 'personalData' : 'businessData';
-                const updatedTransactions = state[key].transactions.filter(t => t.id !== id);
+                const currentData = state[key];
+                const originalIndex = currentData.transactions.findIndex(t => t.id === id);
+                if (originalIndex === -1) return state;
 
-                // Rebuild balances even on delete
+                const original = currentData.transactions[originalIndex];
+                let updatedTransactions = [...currentData.transactions];
+
+                if (scope === 'single' && refMonth && (original.isRecurring || original.isFixed)) {
+                    // Excluir apenas esta ocorrência
+                    updatedTransactions[originalIndex] = {
+                        ...original,
+                        recurrence: {
+                            ...(original.recurrence || { frequency: 'monthly', type: 'recurrent' }),
+                            excludedDates: [...(original.recurrence?.excludedDates || []), refMonth]
+                        } as any
+                    };
+                } else if (scope === 'future' && refMonth && (original.isRecurring || original.isFixed)) {
+                    // Excluir esta e as futuras (encerrar a recorrência no mês anterior)
+                    const [year, month] = refMonth.split('-').map(Number);
+                    const prevDate = new Date(year, month - 2, 1);
+                    const prevMonthStr = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+
+                    updatedTransactions[originalIndex] = {
+                        ...original,
+                        recurrence: {
+                            ...(original.recurrence || { frequency: 'monthly', type: 'recurrent' }),
+                            endDate: prevMonthStr
+                        } as any
+                    };
+                } else {
+                    // Excluir todas as instâncias (padrão para não-recorrentes ou se escolhido 'all')
+                    updatedTransactions = updatedTransactions.filter(t => t.id !== id);
+                }
+
+                // Reconstruit saldos após delete
                 const { rebuiltAccounts, rebuiltCards, rebuiltInvoices } = FinancialEngine.rebuildBalances(
                     updatedTransactions, state[key].accounts, state[key].creditCards, state[key].invoices
                 );
