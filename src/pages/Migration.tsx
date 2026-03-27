@@ -349,7 +349,29 @@ CREATE POLICY "Users can manage their own sync data"
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
-GRANT ALL ON public.user_sync TO authenticated;`}
+GRANT ALL ON public.user_sync TO authenticated;
+
+-- Corrigir segurança (RLS) se as tabelas existirem
+DO $$
+BEGIN
+    -- Enable RLS for accounts
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'accounts') THEN
+        ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY;
+        IF EXISTS (SELECT FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'accounts' AND column_name = 'user_id') THEN
+            DROP POLICY IF EXISTS "Users can manage their own accounts" ON public.accounts;
+            CREATE POLICY "Users can manage their own accounts" ON public.accounts FOR ALL USING (auth.uid() = user_id);
+        END IF;
+    END IF;
+
+    -- Enable RLS for transactions
+    IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'transactions') THEN
+        ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+        IF EXISTS (SELECT FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'transactions' AND column_name = 'user_id') THEN
+            DROP POLICY IF EXISTS "Users can manage their own transactions" ON public.transactions;
+            CREATE POLICY "Users can manage their own transactions" ON public.transactions FOR ALL USING (auth.uid() = user_id);
+        END IF;
+    END IF;
+END $$;`}
                 </pre>
                 <button
                     className="sys-btn-secondary"
@@ -362,7 +384,8 @@ GRANT ALL ON public.user_sync TO authenticated;`}
 );
 ALTER TABLE public.user_sync ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can manage their own sync data" ON public.user_sync FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
-GRANT ALL ON public.user_sync TO authenticated;`);
+GRANT ALL ON public.user_sync TO authenticated;
+DO $$ BEGIN IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'accounts') THEN ALTER TABLE public.accounts ENABLE ROW LEVEL SECURITY; IF EXISTS (SELECT FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'accounts' AND column_name = 'user_id') THEN DROP POLICY IF EXISTS "Users can manage their own accounts" ON public.accounts; CREATE POLICY "Users can manage their own accounts" ON public.accounts FOR ALL USING (auth.uid() = user_id); END IF; END IF; IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'transactions') THEN ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY; IF EXISTS (SELECT FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'transactions' AND column_name = 'user_id') THEN DROP POLICY IF EXISTS "Users can manage their own transactions" ON public.transactions; CREATE POLICY "Users can manage their own transactions" ON public.transactions FOR ALL USING (auth.uid() = user_id); END IF; END IF; END $$; SELECT 'Tabela user_sync configurada e RLS ativado em accounts e transactions!' as resultado;`);
                         setMsg('SQL copiado para o clipboard!', 'success');
                     }}
                 >

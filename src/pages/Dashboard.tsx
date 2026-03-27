@@ -83,7 +83,7 @@ const WidgetWrapper = ({ id, label, children, isFullWidth = false, settings, isC
           style={{
             position: 'absolute', top: -10, right: -10, zIndex: 10,
             width: 24, height: 24, borderRadius: '50%',
-            backgroundColor: isVisible ? '#f85149' : '#3fb950',
+            backgroundColor: isVisible ? 'var(--sys-red)' : 'var(--sys-green)',
             color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
             transition: 'transform 0.2s ease'
