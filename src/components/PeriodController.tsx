@@ -41,7 +41,7 @@ const PeriodController: React.FC<PeriodControllerProps> = ({ incomeTotal, expens
 
         <div className="period-display" onClick={handleCurrent} title="Ir para o mês atual">
           <h2 className="month-label">
-            {format(current, "MMMM yyyy", { locale: ptBR })}
+            {format(current, "MMMM", { locale: ptBR })} <span style={{ opacity: 0.4 }}>{format(current, "yyyy")}</span>
           </h2>
           
           {hasData && (
@@ -108,8 +108,8 @@ const PeriodController: React.FC<PeriodControllerProps> = ({ incomeTotal, expens
 
         .month-label {
           font-family: var(--sys-font-display);
-          font-size: 20px;
-          font-weight: 900;
+          font-size: 16px;
+          font-weight: 800;
           color: var(--sys-text-primary);
           text-transform: capitalize;
           margin: 0;

@@ -78,8 +78,8 @@ const Sidebar: React.FC = () => {
         </div>
 
         <div className="context-switcher">
-          <div className={`context-logo ${currentContext}`}>
-            {currentContext === 'personal' ? <Briefcase size={20} /> : <User size={20} />}
+          <div className={`context-logo ${currentContext}`} style={{ backgroundColor: 'var(--accent-primary)', color: 'white', borderRadius: '10px', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.2)' }}>
+            {currentContext === 'personal' ? <Briefcase size={22} /> : <User size={22} />}
           </div>
           <div className="context-info">
             <span className="context-label">Contexto</span>
@@ -100,8 +100,9 @@ const Sidebar: React.FC = () => {
               key={item.id}
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
               onClick={() => navigate(item.path)}
+              title={sidebarState === 'mini' ? item.label : undefined}
             >
-              <item.icon size={iconSize} color={item.id === 'income' ? 'var(--success)' : item.id === 'expenses' ? 'var(--error)' : 'currentColor'} />
+              <item.icon size={20} color={item.id === 'income' ? 'var(--sys-green)' : item.id === 'expenses' ? 'var(--sys-red)' : 'currentColor'} />
               <span>{item.label}</span>
             </button>
           ))}
@@ -241,20 +242,23 @@ const Sidebar: React.FC = () => {
         .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 
         .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-          height: var(--v-nav-item-h);
-          padding: 0 10px;
-          color: var(--text-secondary);
-          background: transparent;
-          border-radius: 10px;
-          width: 100%;
-          min-width: 200px;
-          transition: all 0.2s;
-          position: relative;
-          font-size: var(--v-nav-font-s);
+          font-size: 13px;
           overflow: hidden;
+          font-weight: 500;
+        }
+
+        .sidebar.mini .nav-item {
+          padding: 0;
+          justify-content: center;
+        }
+
+        .sidebar.mini .nav-item svg {
+          min-width: 20px;
+          opacity: 1;
+        }
+
+        .sidebar.mini .nav-item span {
+          display: none;
         }
 
         .nav-item svg {
@@ -303,8 +307,8 @@ const Sidebar: React.FC = () => {
           opacity: 1;
         }
 
-        .brand-name { font-weight: 800; font-size: 16px; color: var(--accent-primary); }
-        .brand-version { font-size: 10px; color: var(--text-secondary); }
+        .brand-name { font-family: var(--sys-font-display); font-weight: 900; font-size: 18px; color: var(--accent-primary); letter-spacing: -0.05em; }
+        .brand-version { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
 
         @media (max-width: 768px) {
           .sidebar { display: none !important; }
