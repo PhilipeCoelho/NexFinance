@@ -80,7 +80,7 @@ interface FinanceState {
     updateLastUpdate: () => void;
 }
 
-const DEFAULT_WIDGETS: DashboardWidget[] = [
+export const DEFAULT_WIDGETS: DashboardWidget[] = [
     { id: 'proj_30', label: 'Projeção 30 dias', visible: true },
     { id: 'chart_flow', label: 'Fluxo Financeiro do Mês', visible: true },
     { id: 'chart_categories', label: 'Distribuição por Categoria', visible: true },
@@ -633,14 +633,24 @@ if (typeof window !== 'undefined') {
         const p = state?.personalData;
         const b = state?.businessData;
         if (!p && !b) return 0;
-        return (
-            (p?.transactions?.length || 0) +
-            (p?.accounts?.length || 0) +
-            (p?.creditCards?.length || 0) +
-            (b?.transactions?.length || 0) +
-            (b?.accounts?.length || 0) +
-            (b?.creditCards?.length || 0)
-        );
+        
+        const countContext = (ctx: any) => {
+            if (!ctx) return 0;
+            return (
+                (ctx.transactions?.length || 0) +
+                (ctx.accounts?.length || 0) +
+                (ctx.creditCards?.length || 0) +
+                (ctx.invoices?.length || 0) +
+                (ctx.categories?.length || 0) +
+                (ctx.tags?.length || 0) +
+                (ctx.budgets?.length || 0) +
+                (ctx.goals?.length || 0) +
+                (ctx.projects?.length || 0) +
+                (ctx.costCenters?.length || 0)
+            );
+        };
+
+        return countContext(p) + countContext(b);
     };
 
     supabase.auth.onAuthStateChange(async (event, session) => {

@@ -3,8 +3,9 @@ import { useFinanceStore } from '@/hooks/use-store';
 import { supabase } from '@/services/supabase';
 import {
     Cloud, CloudDownload, CloudUpload, CheckCircle2, AlertCircle,
-    Database, Download, Upload, RefreshCw, Info, FileJson
+    Database, Download, Upload, RefreshCw, Info, FileJson, ShieldAlert, ShieldCheck
 } from 'lucide-react';
+import SupremeRecovery from '@/components/SupremeRecovery';
 
 const Migration: React.FC = () => {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -202,6 +203,11 @@ const Migration: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* SECÇÃO ZERO: RECUPERAÇÃO SUPREMA (Emergência) */}
+            <SupremeRecovery />
+
+            <div style={{ margin: '32px 0', borderBottom: '1px solid var(--sys-border)' }}></div>
 
             {/* Status Banner */}
             {message && (

@@ -22,7 +22,7 @@ import {
   Activity
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useFinanceStore, useCurrentData } from '@/hooks/use-store';
+import { useFinanceStore, useCurrentData, DEFAULT_WIDGETS } from '@/hooks/use-store';
 import { format, parseISO, startOfDay, subMonths, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { FinancialEngine } from '@/lib/FinancialEngine';
@@ -109,14 +109,27 @@ const Dashboard: React.FC = () => {
   const { settings, referenceMonth, setReferenceMonth, toggleWidget, reorderWidgets } = useFinanceStore();
   const data = useCurrentData();
 
-  // Ensure we start with current month
+  // Ensure we start with current month and heal widgets if necessary
   useEffect(() => {
     const today = new Date();
     const todayMonth = format(today, 'yyyy-MM');
     if (!referenceMonth) {
       setReferenceMonth(todayMonth);
     }
-  }, [referenceMonth, setReferenceMonth]);
+
+    // Auto-heal widgets if they are empty or from an old version
+    const prevWidgets = settings.dashboardWidgets || [];
+    const hasNewWidgets = prevWidgets.some(w => ['chart_flow', 'chart_categories', 'intelligence'].includes(w.id));
+    
+    if (prevWidgets.length === 0 || !hasNewWidgets) {
+      console.log("DASHBOARD: Healing widgets...");
+      // For each default widget, ensure it exists or map from old
+      const healed = [...DEFAULT_WIDGETS];
+      useFinanceStore.setState((state) => ({
+        settings: { ...state.settings, dashboardWidgets: healed }
+      }));
+    }
+  }, [referenceMonth, setReferenceMonth, settings.dashboardWidgets]);
 
   if (!data) return null;
 

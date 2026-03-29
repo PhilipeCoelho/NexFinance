@@ -79,12 +79,12 @@ const Sidebar: React.FC = () => {
 
         <div className="context-switcher">
           <div className={`context-logo ${currentContext}`} style={{ backgroundColor: 'var(--accent-primary)', color: 'white', borderRadius: '10px', boxShadow: '0 4px 10px rgba(59, 130, 246, 0.2)' }}>
-            {currentContext === 'personal' ? <Briefcase size={22} /> : <User size={22} />}
+            {currentContext === 'personal' ? <User size={22} /> : <Briefcase size={22} />}
           </div>
           <div className="context-info">
             <span className="context-label">Contexto</span>
             <span className="context-name">
-              {currentContext === 'personal' ? 'Finanças Empresariais' : 'Finanças Pessoais'}
+              {currentContext === 'personal' ? 'Finanças Pessoais' : 'Finanças Empresariais'}
             </span>
           </div>
           <div className="switch-dropdown">
