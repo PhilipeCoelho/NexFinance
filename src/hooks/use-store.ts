@@ -42,6 +42,7 @@ interface FinanceState {
     setUiDensity: (density: UIDensity) => void;
     toggleWidget: (id: string) => void;
     reorderWidgets: (startIndex: number, endIndex: number) => void;
+    swapContextData: () => void;
     setReferenceMonth: (month: string) => void;
     setViewMonth: (month: string) => void;
     syncWithStorage: () => void;
@@ -178,12 +179,20 @@ export const useFinanceStore = create<FinanceState>()(
             }),
 
             reorderWidgets: (startIndex, endIndex) => set((state) => {
-                const widgets = [...(state.settings.dashboardWidgets || DEFAULT_WIDGETS)];
+                const widgets = [...(state.settings.dashboardWidgets || [])];
                 const [removed] = widgets.splice(startIndex, 1);
                 widgets.splice(endIndex, 0, removed);
-                return { settings: { ...state.settings, dashboardWidgets: widgets }, lastUpdatedAt: new Date().toISOString() };
+                return {
+                    settings: { ...state.settings, dashboardWidgets: widgets },
+                    lastUpdatedAt: new Date().toISOString()
+                };
             }),
-
+            swapContextData: () => set((state) => ({
+                personalData: { ...state.businessData },
+                businessData: { ...state.personalData },
+                currentContext: state.currentContext === 'personal' ? 'business' : 'personal',
+                lastUpdatedAt: new Date().toISOString()
+            })), 
             setReferenceMonth: (month) => set({ referenceMonth: month }),
             setViewMonth: (month) => set({ viewMonth: month }),
 

@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { Shield, RotateCcw, Database, AlertTriangle, CheckCircle2, Search } from 'lucide-react';
+import { Shield, RotateCcw, Database, AlertTriangle, CheckCircle2, Search, Repeat, RefreshCw } from 'lucide-react';
 import { useFinanceStore } from '@/hooks/use-store';
+
+interface FoundItem {
+    key: string;
+    items: number;
+}
 
 const SupremeRecovery: React.FC = () => {
     const [status, setStatus] = useState<'idle' | 'scanning' | 'recovered' | 'error'>('idle');
     const [message, setMessage] = useState('');
-    const [foundItems, setFoundItems] = useState<{key: string, items: number}[]>([]);
+    const [foundItems, setFoundItems] = useState<FoundItem[]>([]);
     const { experimental_recoverData } = useFinanceStore();
 
     const scanLocalStorage = () => {
@@ -85,6 +90,18 @@ const SupremeRecovery: React.FC = () => {
         }
     };
 
+    const handleSwap = () => {
+        if (confirm('Tem a certeza que deseja inverter os dados entre Pessoal e Empresarial?')) {
+            useFinanceStore.getState().swapContextData();
+            setMessage('✅ Contextos invertidos com sucesso!');
+            setStatus('recovered');
+        }
+    };
+
+    const handleForceReload = () => {
+        window.location.reload();
+    };
+
     return (
         <div className="sys-card" style={{ border: '2px solid var(--sys-blue)', background: 'rgba(59, 130, 246, 0.05)', marginTop: '32px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -104,12 +121,18 @@ const SupremeRecovery: React.FC = () => {
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
                 <button className="sys-btn-primary" onClick={scanLocalStorage} style={{ height: '44px' }}>
                     <Search size={18} /> PROCURAR NO BROWSER
                 </button>
                 <button className="sys-btn-secondary" onClick={loadDatabaseJson} style={{ height: '44px' }}>
                     <Database size={18} /> RESTAURAR DO SERVIDOR
+                </button>
+                <button className="sys-btn-minimal" onClick={handleSwap} style={{ height: '44px', border: '1px solid var(--sys-border)', background: 'white' }}>
+                    <Repeat size={18} /> INVERTER CONTEXTOS
+                </button>
+                <button className="sys-btn-minimal" onClick={handleForceReload} style={{ height: '44px', border: '1px solid var(--sys-border)', background: 'white' }}>
+                    <RefreshCw size={18} /> FORÇAR RECARREGAMENTO
                 </button>
             </div>
 
@@ -117,7 +140,7 @@ const SupremeRecovery: React.FC = () => {
                 <div style={{ marginTop: '20px', padding: '16px', background: 'var(--bg-tertiary)', borderRadius: '12px' }}>
                     <h3 style={{ fontSize: '14px', fontWeight: 750, marginBottom: '12px' }}>Fragmentos Encontrados:</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {foundItems.map(f => (
+                        {foundItems.map((f: FoundItem) => (
                             <div key={f.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'white', borderRadius: '8px', border: '1px solid var(--sys-border)' }}>
                                 <div>
                                     <div style={{ fontSize: '13px', fontWeight: 700 }}>{f.key}</div>
